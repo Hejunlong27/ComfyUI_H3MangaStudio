@@ -1,0 +1,47 @@
+{
+  "episode": "Reborn 第30卷 目标283",
+  "style": "manga_anime",
+  "language": "zh",
+  "default_size": "1344x768",
+  "negative": "lowres, blurry, flickering, identity drift, extra fingers, deformed hands, watermark, text",
+  "shots": [
+    {
+      "id": "s01",
+      "panel": 0,
+      "duration": 4,
+      "camera": "tilt_up",
+      "action": "黄昏的住宅区街景，电线杆与交错的电线横过天空，一只乌鸦掠过画面",
+      "extra": "天空有厚重的云层，逆光"
+    },
+    {
+      "id": "s02",
+      "panel": 1,
+      "duration": 5,
+      "characters": ["reborn"],
+      "camera": "slow_push_in",
+      "action": "信箱口塞着一封盖着蜡封的信，@reborn 从信箱上方探出头，眼睛发亮",
+      "speaker": "reborn",
+      "dialogue": "谢谢啰，列恩！"
+    },
+    {
+      "id": "s03",
+      "panel": 2,
+      "duration": 5,
+      "characters": ["reborn"],
+      "camera": "close_up",
+      "action": "@reborn 双手捧着一封印有家徽的信，嘴角上扬，抬头看向镜头",
+      "speaker": "reborn",
+      "dialogue": "是9代首领寄来的。"
+    },
+    {
+      "id": "s04",
+      "panel": 3,
+      "duration": 4,
+      "characters": ["reborn"],
+      "camera": "static",
+      "action": "@reborn 的表情沉下来，画面压暗，信封上的家徽特写",
+      "speaker": "reborn",
+      "dialogue": "这一刻终于还是到来了。"
+    }
+  ]
+}

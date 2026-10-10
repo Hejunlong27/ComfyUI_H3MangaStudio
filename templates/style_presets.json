@@ -1,0 +1,7 @@
+{
+  "_说明": "自定义风格表。在「H3 提示词装配」节点的 style_json 填本文件绝对路径即可生效。key = 分镜/计划里的 style 字段，value = 展开给 H3 的风格语言。可以覆盖内置项（内置表见 core/prompt_build.py 的 STYLE_PRESETS）。",
+  "reborn_2000s": "early-2000s Japanese shonen anime TV look, slightly grainy, warm muted palette, thick outlines, cel shading with two tones",
+  "reborn_modern_remake": "modern remake of a 2000s shonen anime, clean digital linework, richer lighting, film-like color grading, 24fps animation feel",
+  "manga_ink_motion": "motion comic, original black-and-white manga ink art preserved, screentone intact, subtle parallax only, no coloring",
+  "night_rain_city": "night city in the rain, neon reflections, anime film color grading, deep blues with warm highlights"
+}

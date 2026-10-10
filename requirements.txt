@@ -1,0 +1,10 @@
+# 本插件**不额外依赖任何第三方包**。
+#
+# 全部运行时依赖都由 ComfyUI 本体提供：
+#   torch      —— 张量运算（ComfyUI 自带）
+#   numpy      —— 切格投影计算（ComfyUI 自带）
+#   opencv     —— 切格缩放与形态学（ComfyUI 自带 opencv-python）
+#   aiohttp    —— 前端路由（ComfyUI 自带）
+#
+# 故意留空，避免和 ComfyUI 的 pin 版本冲突。
+# 如果将来确实需要新依赖，在这里加，并同步更新 pyproject.toml。

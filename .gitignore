@@ -1,0 +1,61 @@
+# ============================================================
+# ComfyUI_H3MangaStudio — 版本控制忽略规则
+# 原则：只提交插件源码与随包资源；排除缓存、构建产物、
+#       本地运行输出、编辑器/系统临时文件、以及机器相关配置。
+# ============================================================
+
+# ---------- Python 字节码与缓存 ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ---------- 打包 / 构建产物 ----------
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---------- 虚拟环境 ----------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---------- 测试 / 静态检查缓存 ----------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# ---------- 编辑器 / IDE ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- 操作系统 ----------
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+
+# ---------- ComfyUI 本地运行输出（不入库） ----------
+output/
+temp/
+temp_*/
+*.log
+
+# ---------- 本机相关配置（含绝对路径 / 模型清单，严禁入库） ----------
+env.json
+node_schema.json
+local_settings*.json
+*.local.json

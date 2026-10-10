@@ -1,0 +1,29 @@
+[project]
+name = "comfyui-h3-manga-studio"
+version = "0.4.3"
+description = "漫改动画批量量产插件：基于 MiniMax H3 多参考视频生成能力，把漫画页切分镜格、装配参考包与提示词、整集批量渲染"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "H3 Manga Studio" }]
+keywords = ["comfyui", "minimax", "h3", "manga", "anime", "video", "batch"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+# 运行时依赖全部由 ComfyUI 本体提供（torch / numpy / opencv / aiohttp）。
+# 这里不额外声明，避免和 ComfyUI 的 pin 版本打架。
+dependencies = []
+
+[project.urls]
+Documentation = "https://docs.comfy.org/"
+
+[tool.comfy]
+PublisherId = "h3-manga-studio"
+DisplayName = "H3 Manga Studio"
+Icon = ""
+requires-comfyui = ">=0.38.0"   # 实测下限：需要 comfy_extras/nodes_minimax_h3.py + io.Custom/io.Autogrow
+
+[tool.setuptools]
+packages = ["core", "nodes"]

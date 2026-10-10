@@ -1,0 +1,49 @@
+# 分镜清单（块文本格式）—— 直接粘到「H3 分镜清单加载」节点的 inline_text
+#
+# 以 # 开头的行是全局元信息；=== 之间是一段镜头。
+# 字段名支持中英混写（见 core/script_parse.py 的别名表）。
+#
+# 核心规则：用 @角色id 引用角色，插件会自动替换成正确的 <Picture i>。
+# 角色 id 来自「H3 参考包」节点里 character_names 填的名字。
+#
+# 本文件示例改编自《家庭教师 Reborn》第30卷 目标283（至门中学）
+
+# episode: Reborn 第30卷 目标283
+# style: manga_anime
+# language: zh
+# default_size: 1344x768
+# negative: lowres, blurry, flickering, identity drift, extra fingers, deformed hands
+
+=== s01 ===
+panel: 0
+duration: 4
+camera: tilt_up
+action: 黄昏的住宅区街景，电线杆与交错的电线横过天空，一只乌鸦掠过画面
+extra: 天空有厚重的云层，逆光
+
+=== s02 ===
+panel: 1
+duration: 5
+characters: reborn
+camera: slow_push_in
+action: 信箱口塞着一封盖着蜡封的信，@reborn 从信箱上方探出头，眼睛发亮
+speaker: reborn
+dialogue: 谢谢啰，列恩！
+
+=== s03 ===
+panel: 2
+duration: 5
+characters: reborn
+camera: close_up
+action: @reborn 双手捧着一封印有家徽的信，嘴角上扬，抬头看向镜头
+speaker: reborn
+dialogue: 是9代首领寄来的。
+
+=== s04 ===
+panel: 3
+duration: 4
+characters: reborn
+camera: static
+action: @reborn 的表情沉下来，画面压暗，信封上的家徽特写
+speaker: reborn
+dialogue: 这一刻终于还是到来了。

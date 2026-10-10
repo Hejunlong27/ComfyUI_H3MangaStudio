@@ -1,0 +1,30 @@
+{
+  "_说明": "角色档案示例。本插件当前版本把角色档案直接写在「H3 参考包」节点的 character_names / character_describes 两个字段里（逗号分隔 + 每行一个描述），所以本文件是**参考格式**，用于把档案放在外部维护。",
+  "_约定": {
+    "character_names": "逗号分隔，第 N 个名字 ↔ 第 N 个图槽；同名重复表示同一角色的多张定妆图",
+    "character_describes": "每行一个角色的外观锁定描述，行序与角色首次出现的顺序一致"
+  },
+  "episode": "Reborn 第30卷 目标283",
+  "characters": [
+    {
+      "id": "纲吉",
+      "name": "泽田纲吉",
+      "views": ["正面半身", "侧面半身", "全身"],
+      "describe": "棕发橙眼，蓬松短发，黑色并盛中学学生制服，左手中指戴彭格列戒指",
+      "notes": "表情以犹豫、认真为主；变身状态（死气模式）需要单独做一套参考图"
+    },
+    {
+      "id": "Reborn",
+      "name": "Reborn",
+      "views": ["正面半身"],
+      "describe": "黑西装婴儿，黑色卷鬓角，黑色礼帽上有橙色变色龙列恩，眼神锐利",
+      "notes": "尺寸小但必须保持头部比例；帽檐阴影是关键识别特征"
+    }
+  ],
+  "style": {
+    "id": "manga_anime",
+    "reference_note": "取一页最能代表全卷画风的原稿作风格基准图（不要取跨页大图）"
+  },
+  "camera_default": "static",
+  "negative": "lowres, blurry, flickering, identity drift, extra fingers, deformed hands, watermark, text"
+}

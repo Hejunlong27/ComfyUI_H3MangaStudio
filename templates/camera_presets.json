@@ -1,0 +1,10 @@
+{
+  "_说明": "自定义运镜表。在「H3 提示词装配」节点的 camera_json 填本文件绝对路径即可生效。key = 分镜里写的短名，value = 展开给 H3 的镜头语言。可以覆盖内置项（内置表见 core/prompt_build.py 的 CAMERA_PRESETS）。",
+  "slow_reveal": "very slow reveal, camera drifts sideways while the subject stays centered",
+  "manga_panel_push": "sudden snap push in, dramatic emphasis like a manga impact panel",
+  "speed_lines": "fast push in with radial speed lines, high energy",
+  "rain_window": "static shot through a rain-streaked window, foreground water droplets",
+  "overhead_topdown": "top-down overhead shot, flat manga-like composition",
+  "shoulder_follow": "over-the-shoulder tracking shot following the subject from behind",
+  "freeze_frame": "near-static shot with only hair and cloth moving slightly in the wind"
+}
