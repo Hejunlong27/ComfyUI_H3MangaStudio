@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-h3-manga-studio"
-version = "0.4.3"
+version = "0.80"
 description = "漫改动画批量量产插件：基于 MiniMax H3 多参考视频生成能力，把漫画页切分镜格、装配参考包与提示词、整集批量渲染"
 readme = "README.md"
 requires-python = ">=3.9"

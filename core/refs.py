@@ -136,6 +136,7 @@ def build_ref_pack(
     video_audios: Any = None,
     max_ref_images: int = H3_MAX_REF_IMAGES,
     name_source: str = "slot",
+    one_image_per_character: bool = True,
 ) -> RefPack:
     """从节点输入装配 RefPack。
 
@@ -153,6 +154,11 @@ def build_ref_pack(
     video_names/videos: 参考视频片段，≤3。**一个槽位 = 一段多帧视频**（不拆帧）
     video_audios      : 与 videos **按下标一一对应**的配套音轨
     name_source       : "slot" = 用用户填的名字；"index" = 强制用 ref1/ref2
+    one_image_per_character :
+                        **默认 True —— 一个角色只锁一张参考图**。同名重复写只保留
+                        第一张，其余忽略并发 warning。约定用「四视图 / 角色设定卡」
+                        把多视角合成到一张图里，避免多图之间的服装/角度歧义。
+                        置 False 可恢复旧行为（同名重复 = 多张定妆图，一对一吃槽）。
     """
     pack = RefPack(max_ref_images=int(max_ref_images or H3_MAX_REF_IMAGES))
 
@@ -163,27 +169,54 @@ def build_ref_pack(
     provided_names = [n for n in
                       (x.strip() for x in (character_names or "").replace("，", ",").split(","))
                       if n]
-    pack.source_note = ""
+    notes: List[str] = []
     if char_imgs and len(provided_names) < len(char_imgs):
-        pack.source_note = (
-            f"图槽有 {len(char_imgs)} 张，但只填了 {len(provided_names)} 个名字；"
-            f"多出来的图被当成独立角色（{'/'.join(char_names[len(provided_names):])}）。"
-            f"若它们是某个角色的第二、第三张定妆图，请把名字重复写一遍 —— "
-            f"例如「纲吉, 纲吉, Reborn」表示纲吉 2 张 + Reborn 1 张。"
-        )
+        auto_named = "/".join(char_names[len(provided_names):])
+        if one_image_per_character:
+            notes.append(
+                f"图槽有 {len(char_imgs)} 张，但只填了 {len(provided_names)} 个名字；"
+                f"多出来的图会被当成独立角色（{auto_named}）—— **一角色一图**约定下，"
+                f"请给每个角色填一个名字 + 一张「四视图 / 角色设定卡」，"
+                f"不要用重复名字来塞多张图。"
+            )
+        else:
+            notes.append(
+                f"图槽有 {len(char_imgs)} 张，但只填了 {len(provided_names)} 个名字；"
+                f"多出来的图被当成独立角色（{auto_named}）。"
+                f"若它们是某个角色的第二、第三张定妆图，请把名字重复写一遍 —— "
+                f"例如「纲吉, 纲吉, Reborn」表示纲吉 2 张 + Reborn 1 张。"
+            )
 
-    # ★ 同名分组：一个角色可以有多张定妆图（正面 / 侧面 / 全身）。
-    #   约定：character_names 里出现几次同名，就吃掉几个图槽。
-    #   例："纲吉, 纲吉, 纲吉, Reborn" + 4 张图 → 纲吉 3 张、Reborn 1 张。
-    #   这比「一个名字只能一张图」实用得多，也避免为了多视角而编造假名字。
+    # ★ 角色参考图：**默认一个角色只锁一张图**。
+    #   为什么默认改成一图：
+    #     ① 歧义 —— 同一个角色的正面/侧面/全身图之间若发型、服装、画风有差异，
+    #        模型会在它们之间摇摆，反而不如一张清晰的四视图稳定；
+    #     ② 稀缺 —— 官方参考图上限 9 张，还要跟分镜格锚点、风格基准图共享，
+    #        同一个角色吃掉 2~3 张会挤掉别的角色。
+    #   约定：用一张「四视图 / 角色设定卡」把正/侧/背/表情并到一张图里。
+    #   确实需要多图（例如角色换装、多形态）时把 one_image_per_character 关掉，
+    #   行为与旧版完全一致（同名重复 = 按顺序吃掉多个图槽）。
     groups: List[Tuple[str, List[Any]]] = []
     index_of: Dict[str, int] = {}
-    for name, img in zip(char_names, char_imgs):
+    dropped: List[str] = []
+    for slot_i, (name, img) in enumerate(zip(char_names, char_imgs)):
         if name in index_of:
+            if one_image_per_character:
+                dropped.append(f"槽{slot_i + 1}「{name}」")
+                continue
             groups[index_of[name]][1].append(img)
         else:
             index_of[name] = len(groups)
             groups.append((name, [img]))
+
+    if dropped:
+        notes.append(
+            f"一角色一图（默认）：以下同名重复的图槽被忽略 —— {', '.join(dropped)}。"
+            f"每个角色只保留**第一张**图（其余不进参考包，也不会占 <Picture i> 序号）。"
+            f"请改用「四视图 / 角色设定卡」把多视角合成一张；"
+            f"确实需要多图时，把 ② 的「一角色一图」关掉。"
+        )
+    pack.source_note = " ".join(notes)
 
     used_ids: set = set()
     for i, (raw_name, imgs) in enumerate(groups):

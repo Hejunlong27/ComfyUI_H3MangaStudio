@@ -87,7 +87,7 @@ print(f"载入 {len(schemas)} 个节点：{', '.join(sorted(schemas))}")
 # --------------------------------------------------------------------------
 section("节点元信息")
 # --------------------------------------------------------------------------
-ok(len(schemas) == 10, f"节点数量为 10（实得 {len(schemas)}）")
+ok(len(schemas) == 14, f"节点数量为 14（实得 {len(schemas)}）")
 ok(all(s.category for s in schemas.values()), "所有节点都有 category")
 ok(all(s.display_name for s in schemas.values()), "所有节点都有 display_name")
 ok(len(set(schemas)) == len(schemas), "node_id 全局唯一")
@@ -194,6 +194,12 @@ RUNTIME_NEEDED = {
     "H3MangaPanelSplitter", "H3MangaScriptLoader", "H3MangaShotBinder",
     "H3MangaPromptComposer", "H3MangaShotConditioning", "H3MangaEpisodeRender",
     "H3MangaConsistencyAudit", "H3MangaPlanPreview",
+    # v0.7 前置出栈：需要真实 plan / clip 才有意义（缺输入时会优雅返回空结果，
+    # 由第 4 层用桩对象覆盖真实路径）
+    "H3MangaShotOut", "H3MangaShotCond",
+    # v0.79 VLM 层：⑬ 要调外部 API（缺 key 必须报错，不能静默），
+    # ⑭ 要上游的 VLM 结果 —— 都由第 4 层用桩覆盖。
+    "H3MangaVLMScribe", "H3MangaVLMPlan",
 }
 ran = 0
 for node_id, schema in schemas.items():

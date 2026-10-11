@@ -1,11 +1,12 @@
-"""一键跑全部四层测试。
+"""一键跑全部测试（四层 + 工作流自检）。
 
 用法：
     "<安装根>/standalone-env/python.exe" custom_nodes/ComfyUI_H3MangaStudio/tests/run_all.py
 
 第 1 / 2 / 4 层用 standalone-env（CPU torch 足够，更快更安全）；
 第 3 层需要 **CUDA 版 torch**（要 import ComfyUI 的 nodes），
-所以本脚本会用 `<ComfyUI>/.venv/Scripts/python.exe` 起子进程跑它。
+第 5 层需要真实节点定义（同样要 import nodes），
+所以这两层会用 `<ComfyUI>/.venv/Scripts/python.exe` 起子进程跑。
 """
 
 from __future__ import annotations
@@ -53,6 +54,14 @@ def main() -> int:
     results["第3层 真实加载"] = run(
         "第 3 层 · 真实加载（ComfyUI 自己的加载器）",
         os.path.join(HERE, "test_real_load.py"), VENV, COMFY_ROOT)
+
+    # ★ 第 5 层：工作流自检。把「模板 ↔ 真实 INPUT_TYPES」的一致性检查
+    #   焊进回归 —— 否则模板里的错（widget 值错位 / 连线接不上 / 参数取错默认值）
+    #   照样能一路溜到出片现场：早先 CLIPLoader.type 一直是默认的
+    #   stable_diffusion（应为 minimax），任何测试都没拦住。
+    results["第5层 工作流自检"] = run(
+        "第 5 层 · 工作流自检（templates/*.json ↔ 真实 INPUT_TYPES + 领域规则）",
+        os.path.join(PKG, "tools", "verify_workflow.py"), VENV, COMFY_ROOT)
 
     print("\n" + "=" * 70)
     bad = 0

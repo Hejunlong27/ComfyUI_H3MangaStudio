@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional
 TYPE_REFS = "H3_MANGA_REFS"
 TYPE_PLAN = "H3_MANGA_PLAN"
 TYPE_BOARD = "H3_MANGA_BOARD"
+TYPE_VLM = "H3_MANGA_VLM"
 
 # --------------------------------------------------------------------------
 # H3 模型侧硬约束（来自 comfy_extras/nodes_minimax_h3.py 源码常量）
@@ -130,6 +131,99 @@ def estimate_video_tokens(width: int, height: int, length: int) -> int:
     lw = max(1, int(width) // H3_LATENT_SPATIAL)
     lt = latent_frames_for(int(length))
     return int(lt) * max(1, lh // 2) * max(1, lw // 2)
+
+
+# --------------------------------------------------------------------------
+# 画幅选择：**严格对齐官方规则**
+# --------------------------------------------------------------------------
+# 官方 comfy_extras/nodes_minimax_h3.py::adapt_canvas 的原文规则：
+#     ratio >= 1 ? 宽 = 768*ratio, 高 = 768   :   宽 = 768, 高 = 768/ratio
+#     名义面积 > 768*1344 时等比缩到上限
+#     逐轴 round 到 32 的倍数
+# 于是「16:9」在官方口径下就是 **1344x768** —— 手写 1376x768 是**超上限**的。
+H3_BASE_SHORT_EDGE = 768
+SIZE_MODE_PRESET = "preset"        # 用比例预设
+SIZE_MODE_PAGE = "page"            # 跟随漫画页比例
+SIZE_MODE_TEXT = "text"            # 用分镜文本里的 default_size / size
+DEFAULT_SIZE_SCALE = 0.5           # 8GB 卡先跑通的档位（16:9 → 672x384）
+
+# 值只是「比例」，真实像素一律由 official_canvas() 按官方规则算出来
+H3_SIZE_PRESETS = {
+    "16:9 横屏": (16, 9),
+    "3:2 横屏": (3, 2),
+    "4:3 横屏": (4, 3),
+    "1:1 方形": (1, 1),
+    "3:4 竖屏": (3, 4),
+    "2:3 竖屏": (2, 3),
+    "9:16 竖屏": (9, 16),
+}
+SIZE_PRESET_DEFAULT = "16:9 横屏"
+H3_SIZE_MODES = [SIZE_MODE_PRESET, SIZE_MODE_PAGE, SIZE_MODE_TEXT]
+
+
+def official_canvas(rw: float, rh: float) -> "tuple[int, int]":
+    """按**官方 adapt_canvas** 的规则给出规范画幅（短边 768、面积 ≤ 768×1344）。
+
+    ★ 末尾一定要再走一遍 ``align_canvas``：官方是**逐轴独立** round 到 32 的，
+    极端比例下两轴同时向上取整会让面积**超过**上限
+    （实测 2.39:1 → 1568×672 = 1,053,696 > 1,032,192）。这里补一道面积硬约束。
+    """
+    import math
+    rw, rh = max(1e-6, float(rw)), max(1e-6, float(rh))
+    ratio = rw / rh
+    if ratio >= 1.0:
+        nw, nh = H3_BASE_SHORT_EDGE * ratio, float(H3_BASE_SHORT_EDGE)
+    else:
+        nw, nh = float(H3_BASE_SHORT_EDGE), H3_BASE_SHORT_EDGE / ratio
+    if nw * nh > H3_MAX_PIXELS:
+        s = math.sqrt(H3_MAX_PIXELS / (nw * nh))
+        nw, nh = nw * s, nh * s
+    return align_canvas(
+        max(H3_CANVAS_MULTIPLE, int(round(nw / H3_CANVAS_MULTIPLE)) * H3_CANVAS_MULTIPLE),
+        max(H3_CANVAS_MULTIPLE, int(round(nh / H3_CANVAS_MULTIPLE)) * H3_CANVAS_MULTIPLE),
+    )
+
+
+def scale_canvas(width: int, height: int, scale: float) -> "tuple[int, int]":
+    """按比例缩画幅（32 倍数与面积上限仍由 align_canvas 兜底）。
+
+    为什么不能「先缩放再走 official_canvas」：official_canvas 会把短边**重新拉回
+    768**，缩放就白做了。所以顺序必须是「先官方规范 → 再按 scale 缩」。
+    """
+    import math as _m
+    s = float(scale)
+    if s <= 0 or not _m.isfinite(s):
+        s = 1.0
+    w = int(round(int(width) * s / H3_CANVAS_MULTIPLE)) * H3_CANVAS_MULTIPLE
+    h = int(round(int(height) * s / H3_CANVAS_MULTIPLE)) * H3_CANVAS_MULTIPLE
+    return align_canvas(max(H3_CANVAS_MULTIPLE, w), max(H3_CANVAS_MULTIPLE, h))
+
+
+def resolve_canvas(size_mode: str = SIZE_MODE_PRESET,
+                   preset: str = SIZE_PRESET_DEFAULT,
+                   page_size: Optional[tuple] = None,
+                   scale: float = DEFAULT_SIZE_SCALE,
+                   text_size: Optional[tuple] = None) -> "tuple[int, int, str]":
+    """统一算「这一镜用什么画幅」。返回 ``(width, height, note)``。
+
+    优先级：``text`` 模式用文本值 → ``page`` 模式跟随原页比例 → 其余用比例预设。
+    **所有结果都过官方规则**，不会是非法画幅。
+    """
+    mode = str(size_mode or SIZE_MODE_PRESET).lower()
+    if mode == SIZE_MODE_TEXT and text_size:
+        w, h = align_canvas(int(text_size[0]), int(text_size[1]))
+        return w, h, f"文本指定 {w}x{h}"
+    if mode == SIZE_MODE_PAGE and page_size:
+        bw, bh = official_canvas(page_size[0], page_size[1])
+        w, h = scale_canvas(bw, bh, scale)
+        return w, h, (f"跟随原页比例 {int(page_size[0])}x{int(page_size[1])}"
+                      f" → 官方规范 {bw}x{bh}"
+                      + (f" × {float(scale):g}" if abs(float(scale) - 1.0) > 1e-6 else ""))
+    rw, rh = H3_SIZE_PRESETS.get(str(preset), H3_SIZE_PRESETS[SIZE_PRESET_DEFAULT])
+    bw, bh = official_canvas(rw, rh)
+    w, h = scale_canvas(bw, bh, scale)
+    return w, h, (f"{preset} → 官方规范 {bw}x{bh}"
+                  + (f" × {float(scale):g}" if abs(float(scale) - 1.0) > 1e-6 else ""))
 
 
 def align_canvas(width: int, height: int) -> "tuple[int, int]":
@@ -395,6 +489,9 @@ class Board:
     images: List[Any] = field(default_factory=list)   # 与 panels 同序的张量
     pages: int = 0
     source: str = ""
+    page_size: tuple = (0, 0)
+    """原页像素尺寸 ``(W, H)``（取第一页）。③ 的 ``size_mode=page`` 要用它
+    反推「官方规范画幅」，所以必须由 ① 填上。"""
 
     def __len__(self) -> int:
         return len(self.panels)
@@ -408,6 +505,90 @@ class Board:
                 f"  #{p.index:02d}  page{p.page_index}  "
                 f"box=({x},{y},{w},{h})  area={p.area_ratio * 100:.1f}%" + shape
             )
+        return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# VLM 页级解读结果
+# --------------------------------------------------------------------------
+@dataclass
+class VLMResult:
+    """``H3_MANGA_VLM`` 的载体 —— VLM「看图说话」的产物。
+
+    为什么单独做一个中间类型，而不是直接出 Plan：
+    **VLM 调用贵且慢，转换便宜。** 拆开之后可以反复调画幅 / 时长 / 是否跳过
+    非叙事页 / 是否强制 shots，而**不必重新调 API**（实测成本 ~3k tokens/页、
+    ~11s/页）。
+
+    ``pages`` 每项结构::
+
+        {"page": 0, "page_name": "page_000.png", "page_size": [W, H],
+         "page_kind": "narrative|cover|info", "summary": "...",
+         "panels": [{"panel": <全局格号>, "shots": 1, "content": "...",
+                     "action": "...", "camera": "static",
+                     "characters": [...], "dialogue_draft": [...],
+                     "duration_hint": 5, "confidence": 0.9}]}
+    """
+
+    pages: List[Dict[str, Any]] = field(default_factory=list)
+    model: str = ""
+    episode: str = ""
+    chars: List[str] = field(default_factory=list)
+    aliases: Dict[str, str] = field(default_factory=dict)
+    warnings: List[str] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+    failed_pages: List[str] = field(default_factory=list)
+    usage: Dict[str, Any] = field(default_factory=dict)
+    seconds: float = 0.0
+    source_note: str = ""
+
+    def __len__(self) -> int:
+        return len(self.pages)
+
+    def stats(self) -> Dict[str, int]:
+        n_panel = sum(len(pg.get("panels") or []) for pg in self.pages)
+        n_shot = sum(int(p.get("shots") or 1)
+                     for pg in self.pages for p in (pg.get("panels") or []))
+        n_non = sum(1 for pg in self.pages
+                    if str(pg.get("page_kind") or "").strip().lower()
+                    in ("cover", "info"))
+        return {
+            "pages": len(self.pages),
+            "failed_pages": len(self.failed_pages),
+            "panels": n_panel,
+            "shots": n_shot,
+            "pages_non_narrative": n_non,
+            "shots_over_one": sum(1 for pg in self.pages
+                                  for p in (pg.get("panels") or [])
+                                  if int(p.get("shots") or 1) > 1),
+        }
+
+    def report(self) -> str:
+        """人读摘要（节点输出用；详细报告见 ``core.vlm.vlm_report``）。"""
+        st = self.stats()
+        lines = [
+            f"VLM 解读结果：{st['pages']} 页"
+            + (f" / {st['failed_pages']} 页失败" if st["failed_pages"] else ""),
+            "=" * 52,
+            f"  模型         : {self.model}",
+            f"  格 / 镜      : {st['panels']} 格 / {st['shots']} 镜",
+            f"  非叙事页     : {st['pages_non_narrative']} 页（封面/设定/目录，"
+            "默认不出镜头）",
+            f"  一格多镜的格 : {st['shots_over_one']}"
+            "  ← 该字段跨次运行不稳定，建议抽查",
+        ]
+        if self.seconds:
+            lines.append(f"  耗时         : {self.seconds:.1f}s")
+        if self.usage.get("total_tokens"):
+            lines.append(f"  token        : {self.usage['total_tokens']}")
+        if self.failed_pages:
+            lines.append("")
+            lines.append(f"失败页（{len(self.failed_pages)}）：{self.failed_pages}")
+        if self.errors:
+            lines.append("")
+            lines.append(f"不合规记录 {len(self.errors)} 条（这些页没写进结果）：")
+            for x in self.errors[:10]:
+                lines.append(f"  ! {x}")
         return "\n".join(lines)
 
 
@@ -432,6 +613,18 @@ class Shot:
     seed: Optional[int] = None            # 空则由 base_seed 派生
     negative: str = ""                    # 单镜负向补充
     extra: str = ""                       # 追加提示词（自由文本）
+    content: str = ""                     # ★ 画面内容（人填；后续可由 VLM 自动填）
+    requested_seconds: float = 0.0        # ★ 用户填的**原始**秒数
+    """``duration`` 会被 17n+5 对齐改写成实际时长（填 4 会变成 4.46），
+    这里保留原始值，报告里才能显示「4 → 107 帧 → 4.46s」这条链。"""
+    sub_index: int = 0                    # ★ 同格内第几镜（0 起）
+    sub_total: int = 1                    # ★ 同一分镜格共展开几镜（1 = 一格一镜）
+    """「镜头数 ≠ 格数」的落地字段。一个分镜格想拍多个镜头（大格先全景再特写、
+    格内多时相）时，文本写 ``shots: N`` → 该格展开成 N 个 Shot，
+    它们 ``panel_index`` 相同（绑同一张格图当锚点）、``sub_total`` 都为 N。
+    ``sub_total > 1`` 时报告会显示 ``x/N``。"""
+    size_note: str = ""                   # 画幅来源说明（报告用）
+    size_was_given: bool = False           # 文本里是否**显式**写了 size（hybrid 合并用）
     # ---- 运行时解析结果 ----
     prompt: str = ""                      # 装配后的最终提示词
     width: int = H3_DEFAULT_WIDTH
@@ -470,6 +663,44 @@ class Plan:
     def total_frames(self) -> int:
         return sum(s.length for s in self.shots)
 
+    def shot_table(self) -> str:
+        """逐镜明细表。★ 一定要显示「原始秒数 → 帧 → 实际秒数」这条链：
+
+        用户填 `duration: 4`，因为 H3 只吃 17n+5（4s→96 帧→**107 帧**=4.458s），
+        实际会被改写成 4.46s。不把这条链显示出来，用户会以为插件算错了。
+        """
+        import math as _m
+        if not self.shots:
+            return "（没有镜头）"
+        rows = [f"{'#':>3} {'panel':>9} {'时长（填 → 帧 → 实际）':>26} "
+                f"{'画幅':>11} {'角色':<12} 内容"]
+        rows.append("-" * 104)
+        for s in self.shots:
+            req = (f"{s.requested_seconds:g}s" if s.requested_seconds
+                   else "默认")
+            t = f"{req} → {s.length} 帧 → {seconds_for_frames(s.length):.2f}s"
+            who = ",".join(s.characters) or "-"
+            text = (s.content or s.action or s.dialogue or "(空)").replace("\n", " ")
+            if not _m.isfinite(s.requested_seconds):
+                req = "默认"
+            # ★ 一格多镜时标出「第几镜 / 共几镜」，否则用户看不出这两行的来源是同一格
+            panel_txt = "-" if s.panel_index is None else str(s.panel_index)
+            if s.sub_total > 1:
+                panel_txt += f" {s.sub_index + 1}/{s.sub_total}"
+            rows.append(
+                f"{s.index:>3} {panel_txt:>9} "
+                f"{t:>26} {f'{s.width}x{s.height}':>11} {who:<12} {text[:34]}"
+            )
+        n_multi = sum(1 for s in self.shots if s.sub_total > 1)
+        if n_multi:
+            n_groups = len({(s.panel_index, s.sub_total) for s in self.shots
+                            if s.sub_total > 1})
+            rows.append(
+                f"\n★ 其中 {n_multi} 镜来自「一格多镜」（{n_groups} 个分镜格被拆成多镜，"
+                f"标为 `panel x/N`）。这些镜共用同一张格图当参考锚点。"
+            )
+        return "\n".join(rows)
+
     def clone(self) -> "Plan":
         return copy.deepcopy(self)
 
@@ -481,6 +712,9 @@ class Plan:
             f"  总时长     : {self.total_seconds():.1f} s（{self.total_frames()} 帧 @ {self.fps}fps）",
             f"  默认画幅   : {self.default_size}",
             f"  全局风格   : {self.style}",
+            "",
+            "  ↑ 以上是**计划值**（全部镜头）。实际出片帧数/秒数以渲染节点报告为准——",
+            "    若渲染节点设了 max_shots，只会跑前 N 镜。",
         ]
         if self.warnings:
             lines.append("-" * 52)

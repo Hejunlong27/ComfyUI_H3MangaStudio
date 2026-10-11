@@ -13,10 +13,11 @@
 from __future__ import annotations
 
 from . import (  # noqa: F401
-    types, script_parse, prompt_build, panel_split, refs, plan, image_ops, mem, ui,
+    types, script_parse, prompt_build, panel_split, refs, plan, image_ops, mem,
+    ui, vlm,
 )
 
 __all__ = [
     "types", "script_parse", "prompt_build", "panel_split", "refs", "plan",
-    "image_ops", "mem", "ui",
+    "image_ops", "mem", "ui", "vlm",
 ]

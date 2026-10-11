@@ -25,6 +25,10 @@ NODE_LABELS = {
     "H3MangaConsistencyAudit": "H3 一致性审计",
     "H3MangaPlanPreview": "H3 计划预览",
     "H3MangaFreeMemory": "H3 显存/内存释放",
+    "H3MangaShotOut": "⑫-A 镜头出栈（喂官方多参节点）",
+    "H3MangaShotCond": "⑫-B 单镜条件（直出）",
+    "H3MangaVLMScribe": "⑬ VLM 漫画解读 ★",
+    "H3MangaVLMPlan": "⑭ VLM 转分镜计划",
 }
 
 NODE_DESCRIPTIONS = {
@@ -38,6 +42,10 @@ NODE_DESCRIPTIONS = {
     "H3MangaConsistencyAudit": "审计角色引用缺失、参考图过少、序号溢出、槽位漂移等一致性问题，输出分层报告。",
     "H3MangaPlanPreview": "只读预览：显示每镜的最终提示词、参考序号映射与警告，排查串号最快的手段。",
     "H3MangaFreeMemory": "把模型从显存与内存里卸载，输出释放前后用量。本机 33.5GB 权重对 16GB 内存，串行加载才能跑通。",
+    "H3MangaShotOut": "★ 官方多参节点的前置接口：出 prompt + 9 个参考图槽（按序号）+ 宽高帧数 + 槽位对照表。采样/放大/解码全在你的图里。",
+    "H3MangaShotCond": "省事版前置：内部调用官方多参节点，直接出 positive + latent，少接 9 根参考图线。",
+    "H3MangaVLMScribe": "把漫画页交给视觉语言模型，逐格读出画面内容/动作/运镜/角色/台词/一格几镜/页型 —— 补上链路里唯一还靠人肉的一环。",
+    "H3MangaVLMPlan": "把 VLM 结果转成分镜计划。纯本地计算、不花钱，可反复调画幅/时长/镜数。",
 }
 
 # --------------------------------------------------------------------------
@@ -102,6 +110,7 @@ INPUT_LABELS = {
     "videos": "参考视频",
     "max_ref_images": "参考图上限",
     "name_source": "id 生成方式",
+    "one_image_per_character": "一角色一图（默认开）",
     # 绑定
     "bind_mode": "绑定方式",
     "panel_offset": "格序号偏移",
@@ -140,6 +149,33 @@ INPUT_LABELS = {
     # 多边形分镜格 / 坐标网格
     "panel_polygon": "斜切格用多边形",
     "grid_preview": "输出坐标网格预览",
+    # 分镜清单：默认时长与画幅（v0.7）
+    "default_duration": "默认时长(秒)",
+    "size_mode": "画幅模式",
+    "size_preset": "画幅比例(官方规范)",
+    "size_scale": "画幅缩放",
+    "auto_shots_per_panel": "每格自动出镜数",
+    # 前置出栈（v0.7）
+    "shot_index": "取第几镜(从 1 起)",
+    "include_anchor": "把分镜格当锚点",
+    # VLM 层（v0.79）
+    "characters": "角色闭集",
+    "char_alias": "角色别名表",
+    "base_url": "API 端点",
+    "api_key": "API Key(留空读环境变量)",
+    "api_key_env": "API Key 环境变量名",
+    "max_edge": "发送长边上限",
+    "temperature": "采样温度",
+    "timeout": "超时(秒)",
+    "max_pages": "只处理前 N 页",
+    "strict_coverage": "严格覆盖(漏读即拒收)",
+    "inspection_fallback": "内容审核回退",
+    "use_proxy": "走系统代理",
+    "include_non_narrative": "保留封面/设定页",
+    "force_shots": "强制每格镜数",
+    "duration_scale": "时长缩放",
+    "episode": "剧集名",
+    "style": "全局风格",
 }
 
 # --------------------------------------------------------------------------
@@ -149,6 +185,9 @@ OUTPUT_LABELS = {
     "board": "分镜格",
     "images": "图像",
     "grid_preview": "坐标网格预览",
+    "prompt": "提示词",
+    "slots": "槽位对照表",
+    "aspect": "画幅",
     "report": "报告",
     "refs": "参考包",
     "plan": "分镜计划",
@@ -161,6 +200,8 @@ OUTPUT_LABELS = {
     "meta": "元数据",
     "table": "序号映射表",
     "text": "文本",
+    "vlm": "VLM 结果",
+    "shot_text": "分镜文本（可贴回 ③）",
 }
 
 

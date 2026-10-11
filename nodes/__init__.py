@@ -12,6 +12,8 @@ from .plan_nodes import (
 )
 from .render_nodes import H3MangaShotConditioning, H3MangaEpisodeRender
 from .mem_nodes import H3MangaFreeMemory
+from .shot_nodes import H3MangaShotOut, H3MangaShotCond
+from .vlm_nodes import H3MangaVLMScribe, H3MangaVLMPlan
 
 __all__ = [
     "H3MangaPanelSplitter",
@@ -24,4 +26,8 @@ __all__ = [
     "H3MangaShotConditioning",
     "H3MangaEpisodeRender",
     "H3MangaFreeMemory",
+    "H3MangaShotOut",
+    "H3MangaShotCond",
+    "H3MangaVLMScribe",
+    "H3MangaVLMPlan",
 ]

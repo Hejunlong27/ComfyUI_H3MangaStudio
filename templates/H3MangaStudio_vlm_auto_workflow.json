@@ -1,0 +1,2790 @@
+{
+ "id": "h3-manga-studio-example",
+ "revision": 0,
+ "last_node_id": 38,
+ "last_link_id": 65,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "title": "UNET · Ref2VA（r2v 专用）",
+   "pos": [
+    0,
+    0
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      36
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UNETLoader",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+    "default"
+   ],
+   "widgets_values_named": {
+    "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+    "weight_dtype": "default"
+   }
+  },
+  {
+   "id": 2,
+   "type": "CLIPLoader",
+   "title": "CLIP · type 必须是 minimax",
+   "pos": [
+    486,
+    0
+   ],
+   "size": [
+    430,
+    142
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      1,
+      56
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPLoader",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+    "minimax",
+    "default"
+   ],
+   "widgets_values_named": {
+    "clip_name": "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+    "type": "minimax",
+    "device": "default"
+   }
+  },
+  {
+   "id": 3,
+   "type": "VAELoader",
+   "title": "VAE · 视频",
+   "pos": [
+    0,
+    182
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      2,
+      46,
+      57
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "minimax_h3_video_vae_int8_convrot.safetensors"
+   ],
+   "widgets_values_named": {
+    "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+   }
+  },
+  {
+   "id": 4,
+   "type": "VAELoader",
+   "title": "VAE · 音频",
+   "pos": [
+    486,
+    182
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      3,
+      48,
+      58
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "minimax_h3_audio_vae_fp32.safetensors"
+   ],
+   "widgets_values_named": {
+    "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+   }
+  },
+  {
+   "id": 5,
+   "type": "LoraLoaderModelOnly",
+   "title": "LoRA · 加速（turbo）",
+   "pos": [
+    1004,
+    0
+   ],
+   "size": [
+    430,
+    142
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 36
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      37
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoraLoaderModelOnly",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    1.0
+   ],
+   "widgets_values_named": {
+    "lora_name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    "strength_model": 1.0
+   }
+  },
+  {
+   "id": 6,
+   "type": "LoraLoaderModelOnly",
+   "title": "LoRA · 轮盘位（默认旁路；Ctrl+B 解除）",
+   "pos": [
+    1490,
+    0
+   ],
+   "size": [
+    430,
+    142
+   ],
+   "flags": {},
+   "order": 13,
+   "mode": 4,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 37
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      38,
+      39,
+      55
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoraLoaderModelOnly",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    0.0
+   ],
+   "widgets_values_named": {
+    "lora_name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    "strength_model": 0.0
+   }
+  },
+  {
+   "id": 7,
+   "type": "LoadImage",
+   "title": "输入 · 漫画页",
+   "pos": [
+    2008,
+    0
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      4,
+      11
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "manga_page.png",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "manga_page.png",
+    "upload": "image"
+   }
+  },
+  {
+   "id": 8,
+   "type": "LoadImage",
+   "title": "输入 · 纲吉 设定卡（四视图）",
+   "pos": [
+    2494,
+    0
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      5
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "char_tsuna_card.png",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "char_tsuna_card.png",
+    "upload": "image"
+   }
+  },
+  {
+   "id": 9,
+   "type": "LoadImage",
+   "title": "输入 · Reborn 设定卡",
+   "pos": [
+    2008,
+    160
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      6
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "char_reborn_card.png",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "char_reborn_card.png",
+    "upload": "image"
+   }
+  },
+  {
+   "id": 10,
+   "type": "H3MangaPanelSplitter",
+   "title": "① 漫画页切分镜格",
+   "pos": [
+    3012,
+    0
+   ],
+   "size": [
+    430,
+    676
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "image",
+     "type": "IMAGE",
+     "link": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "分镜格",
+     "type": "H3_MANGA_BOARD",
+     "links": [
+      12,
+      15,
+      21,
+      61
+     ]
+    },
+    {
+     "name": "图像",
+     "type": "IMAGE",
+     "links": [
+      7,
+      10
+     ]
+    },
+    {
+     "name": "报告",
+     "type": "STRING",
+     "links": [
+      9
+     ]
+    },
+    {
+     "name": "坐标网格预览",
+     "type": "IMAGE",
+     "links": [
+      8
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaPanelSplitter",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "auto",
+    "",
+    200,
+    0.06,
+    80,
+    8,
+    0.01,
+    "rtl",
+    4,
+    1.0,
+    0.0,
+    "component",
+    245,
+    0.015,
+    1,
+    true,
+    0,
+    true,
+    "auto",
+    false
+   ],
+   "widgets_values_named": {
+    "mode": "auto",
+    "manual_boxes": "",
+    "ink_threshold": 200,
+    "gutter_ratio": 0.06,
+    "min_panel_px": 80,
+    "min_gutter_px": 8,
+    "min_panel_ratio": 0.01,
+    "reading_order": "rtl",
+    "padding_px": 4,
+    "panel_scale": 1.0,
+    "merge_tolerance": 0.0,
+    "frame": "component",
+    "white_threshold": 245,
+    "component_min_area": 0.015,
+    "component_close": 1,
+    "deoverlap": true,
+    "component_open": 0,
+    "component_auto_open": true,
+    "panel_polygon": "auto",
+    "grid_preview": false
+   }
+  },
+  {
+   "id": 11,
+   "type": "PreviewImage",
+   "title": "预览 · 切出的分镜格",
+   "pos": [
+    2008,
+    772
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 7
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 12,
+   "type": "PreviewImage",
+   "title": "预览 · 坐标网格（手填框用）",
+   "pos": [
+    2494,
+    772
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 15,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 13,
+   "type": "PreviewAny",
+   "title": "预览 · ① 切格报告（格数/警告）",
+   "pos": [
+    2008,
+    932
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 16,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 9
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 14,
+   "type": "SaveImage",
+   "title": "落盘 · 分镜格 → output/h3manga",
+   "pos": [
+    2494,
+    932
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 17,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SaveImage",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "h3manga/panels"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "h3manga/panels"
+   }
+  },
+  {
+   "id": 15,
+   "type": "H3MangaRefPack",
+   "title": "② 参考包",
+   "pos": [
+    3498,
+    0
+   ],
+   "size": [
+    430,
+    482
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "style_images",
+     "type": "IMAGE",
+     "link": null
+    },
+    {
+     "name": "character_images.character_0",
+     "type": "IMAGE",
+     "link": 5,
+     "shape": 7,
+     "label": "character_0"
+    },
+    {
+     "name": "character_images.character_1",
+     "type": "IMAGE",
+     "link": 6,
+     "shape": 7,
+     "label": "character_1"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "参考包",
+     "type": "H3_MANGA_REFS",
+     "links": [
+      16,
+      18,
+      20,
+      60
+     ]
+    },
+    {
+     "name": "序号映射表",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaRefPack",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "纲吉, Reborn",
+    "棕发橙眼，黑色并盛中学学生制服，左手中指戴彭格列戒指\n黑西装婴儿，黑色卷鬓角，礼帽上有橙色变色龙",
+    "style_main",
+    "",
+    "",
+    9,
+    "slot",
+    true
+   ],
+   "widgets_values_named": {
+    "character_names": "纲吉, Reborn",
+    "character_describes": "棕发橙眼，黑色并盛中学学生制服，左手中指戴彭格列戒指\n黑西装婴儿，黑色卷鬓角，礼帽上有橙色变色龙",
+    "style_name": "style_main",
+    "audio_names": "",
+    "video_names": "",
+    "max_ref_images": 9,
+    "name_source": "slot",
+    "one_image_per_character": true
+   }
+  },
+  {
+   "id": 16,
+   "type": "H3MangaVLMScribe",
+   "title": "⑬ VLM 漫画解读（看图出分镜）",
+   "pos": [
+    3012,
+    772
+   ],
+   "size": [
+    430,
+    520
+   ],
+   "flags": {},
+   "order": 18,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "image",
+     "type": "IMAGE",
+     "link": 11
+    },
+    {
+     "name": "board",
+     "type": "H3_MANGA_BOARD",
+     "link": 12
+    }
+   ],
+   "outputs": [
+    {
+     "name": "VLM 结果",
+     "type": "H3_MANGA_VLM",
+     "links": [
+      13
+     ]
+    },
+    {
+     "name": "报告",
+     "type": "STRING",
+     "links": [
+      52
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaVLMScribe",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "纲吉, Reborn",
+    "",
+    "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "qwen3.5-omni-plus",
+    "",
+    "VLM_API_KEY",
+    1600,
+    0.2,
+    180,
+    1,
+    true,
+    true,
+    false
+   ],
+   "widgets_values_named": {
+    "characters": "纲吉, Reborn",
+    "char_alias": "",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "model": "qwen3.5-omni-plus",
+    "api_key": "",
+    "api_key_env": "VLM_API_KEY",
+    "max_edge": 1600,
+    "temperature": 0.2,
+    "timeout": 180,
+    "max_pages": 1,
+    "strict_coverage": true,
+    "inspection_fallback": true,
+    "use_proxy": false
+   }
+  },
+  {
+   "id": 17,
+   "type": "H3MangaVLMPlan",
+   "title": "⑭ VLM 转分镜计划（不花钱，随便调）",
+   "pos": [
+    3498,
+    772
+   ],
+   "size": [
+    430,
+    324
+   ],
+   "flags": {},
+   "order": 20,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "vlm",
+     "type": "H3_MANGA_VLM",
+     "link": 13
+    }
+   ],
+   "outputs": [
+    {
+     "name": "分镜计划",
+     "type": "H3_MANGA_PLAN",
+     "links": [
+      14
+     ]
+    },
+    {
+     "name": "分镜文本（可贴回 ③）",
+     "type": "STRING",
+     "links": [
+      53
+     ]
+    },
+    {
+     "name": "报告",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaVLMPlan",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    false,
+    0,
+    1.0,
+    5.0,
+    "preset",
+    "16:9 横屏",
+    0.5,
+    "Reborn_30",
+    "manga_anime"
+   ],
+   "widgets_values_named": {
+    "include_non_narrative": false,
+    "force_shots": 0,
+    "duration_scale": 1.0,
+    "default_duration": 5.0,
+    "size_mode": "preset",
+    "size_preset": "16:9 横屏",
+    "size_scale": 0.5,
+    "episode": "Reborn_30",
+    "style": "manga_anime"
+   }
+  },
+  {
+   "id": 18,
+   "type": "H3MangaShotBinder",
+   "title": "④ 分镜绑定",
+   "pos": [
+    1004,
+    772
+   ],
+   "size": [
+    430,
+    220
+   ],
+   "flags": {},
+   "order": 22,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "plan",
+     "type": "H3_MANGA_PLAN",
+     "link": 14
+    },
+    {
+     "name": "board",
+     "type": "H3_MANGA_BOARD",
+     "link": 15
+    },
+    {
+     "name": "refs",
+     "type": "H3_MANGA_REFS",
+     "link": 16
+    }
+   ],
+   "outputs": [
+    {
+     "name": "分镜计划",
+     "type": "H3_MANGA_PLAN",
+     "links": [
+      17
+     ]
+    },
+    {
+     "name": "报告",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaShotBinder",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "by_panel_index",
+    0,
+    true
+   ],
+   "widgets_values_named": {
+    "bind_mode": "by_panel_index",
+    "panel_offset": 0,
+    "allow_reuse": true
+   }
+  },
+  {
+   "id": 19,
+   "type": "H3MangaPromptComposer",
+   "title": "⑤ 提示词装配",
+   "pos": [
+    1490,
+    772
+   ],
+   "size": [
+    430,
+    534
+   ],
+   "flags": {},
+   "order": 24,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "plan",
+     "type": "H3_MANGA_PLAN",
+     "link": 17
+    },
+    {
+     "name": "refs",
+     "type": "H3_MANGA_REFS",
+     "link": 18
+    }
+   ],
+   "outputs": [
+    {
+     "name": "分镜计划",
+     "type": "H3_MANGA_PLAN",
+     "links": [
+      19,
+      59
+     ]
+    },
+    {
+     "name": "提示词（整套）",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaPromptComposer",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "",
+    "",
+    "",
+    "flickering, identity drift, extra fingers, deformed hands",
+    "static",
+    "spoken",
+    "append",
+    true,
+    true,
+    "",
+    ""
+   ],
+   "widgets_values_named": {
+    "template": "",
+    "style_prefix": "",
+    "style_suffix": "",
+    "negative": "flickering, identity drift, extra fingers, deformed hands",
+    "camera_preset": "static",
+    "dialogue_mode": "spoken",
+    "negative_mode": "append",
+    "lock_consistency": true,
+    "include_describe": true,
+    "camera_json": "",
+    "style_json": ""
+   }
+  },
+  {
+   "id": 20,
+   "type": "H3MangaShotOut",
+   "title": "⑫-A 镜头出栈（喂官方多参节点）",
+   "pos": [
+    0,
+    772
+   ],
+   "size": [
+    430,
+    220
+   ],
+   "flags": {},
+   "order": 25,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "plan",
+     "type": "H3_MANGA_PLAN",
+     "link": 19
+    },
+    {
+     "name": "refs",
+     "type": "H3_MANGA_REFS",
+     "link": 20
+    },
+    {
+     "name": "board",
+     "type": "H3_MANGA_BOARD",
+     "link": 21
+    }
+   ],
+   "outputs": [
+    {
+     "name": "提示词",
+     "type": "STRING",
+     "links": [
+      22
+     ]
+    },
+    {
+     "name": "参考图 1 → 官方 ref_image_0",
+     "type": "IMAGE",
+     "links": [
+      23
+     ]
+    },
+    {
+     "name": "参考图 2 → 官方 ref_image_1",
+     "type": "IMAGE",
+     "links": [
+      24
+     ]
+    },
+    {
+     "name": "参考图 3 → 官方 ref_image_2",
+     "type": "IMAGE",
+     "links": [
+      25
+     ]
+    },
+    {
+     "name": "参考图 4 → 官方 ref_image_3",
+     "type": "IMAGE",
+     "links": [
+      26
+     ]
+    },
+    {
+     "name": "参考图 5 → 官方 ref_image_4",
+     "type": "IMAGE",
+     "links": [
+      27
+     ]
+    },
+    {
+     "name": "参考图 6 → 官方 ref_image_5",
+     "type": "IMAGE",
+     "links": [
+      28
+     ]
+    },
+    {
+     "name": "参考图 7 → 官方 ref_image_6",
+     "type": "IMAGE",
+     "links": [
+      29
+     ]
+    },
+    {
+     "name": "参考图 8 → 官方 ref_image_7",
+     "type": "IMAGE",
+     "links": [
+      30
+     ]
+    },
+    {
+     "name": "参考图 9 → 官方 ref_image_8",
+     "type": "IMAGE",
+     "links": [
+      31
+     ]
+    },
+    {
+     "name": "宽",
+     "type": "INT",
+     "links": [
+      32
+     ]
+    },
+    {
+     "name": "高",
+     "type": "INT",
+     "links": [
+      33
+     ]
+    },
+    {
+     "name": "帧数",
+     "type": "INT",
+     "links": [
+      34
+     ]
+    },
+    {
+     "name": "槽位对照表",
+     "type": "STRING",
+     "links": [
+      54
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaShotOut",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    1,
+    true,
+    "match"
+   ],
+   "widgets_values_named": {
+    "shot_index": 1,
+    "include_anchor": true,
+    "ref_image_size": "match"
+   }
+  },
+  {
+   "id": 21,
+   "type": "MiniMaxH3ReferenceToVideo",
+   "title": "官方 · MiniMax H3 多参视频节点",
+   "pos": [
+    0,
+    1402
+   ],
+   "size": [
+    430,
+    572
+   ],
+   "flags": {},
+   "order": 27,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 1
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 2
+    },
+    {
+     "name": "audio_vae",
+     "type": "VAE",
+     "link": 3
+    },
+    {
+     "name": "ref_images.ref_image_0",
+     "type": "IMAGE",
+     "link": 23,
+     "shape": 7,
+     "label": "ref_image_0"
+    },
+    {
+     "name": "ref_images.ref_image_1",
+     "type": "IMAGE",
+     "link": 24,
+     "shape": 7,
+     "label": "ref_image_1"
+    },
+    {
+     "name": "ref_images.ref_image_2",
+     "type": "IMAGE",
+     "link": 25,
+     "shape": 7,
+     "label": "ref_image_2"
+    },
+    {
+     "name": "ref_images.ref_image_3",
+     "type": "IMAGE",
+     "link": 26,
+     "shape": 7,
+     "label": "ref_image_3"
+    },
+    {
+     "name": "ref_images.ref_image_4",
+     "type": "IMAGE",
+     "link": 27,
+     "shape": 7,
+     "label": "ref_image_4"
+    },
+    {
+     "name": "ref_images.ref_image_5",
+     "type": "IMAGE",
+     "link": 28,
+     "shape": 7,
+     "label": "ref_image_5"
+    },
+    {
+     "name": "ref_images.ref_image_6",
+     "type": "IMAGE",
+     "link": 29,
+     "shape": 7,
+     "label": "ref_image_6"
+    },
+    {
+     "name": "ref_images.ref_image_7",
+     "type": "IMAGE",
+     "link": 30,
+     "shape": 7,
+     "label": "ref_image_7"
+    },
+    {
+     "name": "ref_images.ref_image_8",
+     "type": "IMAGE",
+     "link": 31,
+     "shape": 7,
+     "label": "ref_image_8"
+    },
+    {
+     "name": "prompt",
+     "type": "STRING",
+     "link": 22,
+     "widget": {
+      "name": "prompt"
+     }
+    },
+    {
+     "name": "width",
+     "type": "INT",
+     "link": 32,
+     "widget": {
+      "name": "width"
+     }
+    },
+    {
+     "name": "height",
+     "type": "INT",
+     "link": 33,
+     "widget": {
+      "name": "height"
+     }
+    },
+    {
+     "name": "length",
+     "type": "INT",
+     "link": 34,
+     "widget": {
+      "name": "length"
+     }
+    }
+   ],
+   "outputs": [
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "links": [
+      35
+     ]
+    },
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      44
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "MiniMaxH3ReferenceToVideo",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "",
+    1344,
+    768,
+    124,
+    "match"
+   ],
+   "widgets_values_named": {
+    "prompt": "",
+    "width": 1344,
+    "height": 768,
+    "length": 124,
+    "ref_image_size": "match"
+   }
+  },
+  {
+   "id": 22,
+   "type": "KSamplerSelect",
+   "title": "采样器",
+   "pos": [
+    486,
+    1402
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "SAMPLER",
+     "type": "SAMPLER",
+     "links": [
+      40
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "KSamplerSelect",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "res_multistep"
+   ],
+   "widgets_values_named": {
+    "sampler_name": "res_multistep"
+   }
+  },
+  {
+   "id": 23,
+   "type": "BasicScheduler",
+   "title": "调度器（steps 在这里改）",
+   "pos": [
+    0,
+    2014
+   ],
+   "size": [
+    430,
+    168
+   ],
+   "flags": {},
+   "order": 19,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 39
+    }
+   ],
+   "outputs": [
+    {
+     "name": "SIGMAS",
+     "type": "SIGMAS",
+     "links": [
+      41
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "BasicScheduler",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "simple",
+    8,
+    1.0
+   ],
+   "widgets_values_named": {
+    "scheduler": "simple",
+    "steps": 8,
+    "denoise": 1.0
+   }
+  },
+  {
+   "id": 24,
+   "type": "RandomNoise",
+   "title": "噪声",
+   "pos": [
+    486,
+    2014
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "NOISE",
+     "type": "NOISE",
+     "links": [
+      42
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "RandomNoise",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    0,
+    "randomize"
+   ],
+   "widgets_values_named": {
+    "noise_seed": 0,
+    "control_after_generate": "randomize"
+   }
+  },
+  {
+   "id": 25,
+   "type": "BasicGuider",
+   "title": "引导（conditioning 在这里进）",
+   "pos": [
+    0,
+    2222
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 31,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 38
+    },
+    {
+     "name": "conditioning",
+     "type": "CONDITIONING",
+     "link": 35
+    }
+   ],
+   "outputs": [
+    {
+     "name": "GUIDER",
+     "type": "GUIDER",
+     "links": [
+      43
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "BasicGuider",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 26,
+   "type": "SamplerCustomAdvanced",
+   "title": "采样 · 官方五件套",
+   "pos": [
+    486,
+    2222
+   ],
+   "size": [
+    430,
+    194
+   ],
+   "flags": {},
+   "order": 33,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "noise",
+     "type": "NOISE",
+     "link": 42
+    },
+    {
+     "name": "guider",
+     "type": "GUIDER",
+     "link": 43
+    },
+    {
+     "name": "sampler",
+     "type": "SAMPLER",
+     "link": 40
+    },
+    {
+     "name": "sigmas",
+     "type": "SIGMAS",
+     "link": 41
+    },
+    {
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 44
+    }
+   ],
+   "outputs": [
+    {
+     "name": "output",
+     "type": "LATENT",
+     "links": [
+      45,
+      47
+     ]
+    },
+    {
+     "name": "denoised_output",
+     "type": "LATENT",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SamplerCustomAdvanced",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 27,
+   "type": "VAEDecode",
+   "title": "解码 · 视频",
+   "pos": [
+    0,
+    2456
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 34,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 45
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 46
+    }
+   ],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      49
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEDecode",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 28,
+   "type": "VAEDecodeAudio",
+   "title": "解码 · 音频",
+   "pos": [
+    486,
+    2456
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 35,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 47
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 48
+    }
+   ],
+   "outputs": [
+    {
+     "name": "AUDIO",
+     "type": "AUDIO",
+     "links": [
+      50
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEDecodeAudio",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 29,
+   "type": "CreateVideo",
+   "title": "合成视频（24fps）",
+   "pos": [
+    2008,
+    1402
+   ],
+   "size": [
+    430,
+    220
+   ],
+   "flags": {},
+   "order": 36,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 49
+    },
+    {
+     "name": "audio",
+     "type": "AUDIO",
+     "link": 50
+    }
+   ],
+   "outputs": [
+    {
+     "name": "VIDEO",
+     "type": "VIDEO",
+     "links": [
+      51
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CreateVideo",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    24,
+    "auto",
+    "sRGB",
+    "none"
+   ],
+   "widgets_values_named": {
+    "fps": 24,
+    "bit_depth": "auto",
+    "color_space": "sRGB",
+    "codec": "none"
+   }
+  },
+  {
+   "id": 30,
+   "type": "SaveVideo",
+   "title": "保存单镜",
+   "pos": [
+    2494,
+    1402
+   ],
+   "size": [
+    430,
+    168
+   ],
+   "flags": {},
+   "order": 37,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "video",
+     "type": "VIDEO",
+     "link": 51
+    },
+    {
+     "name": "format",
+     "type": "COMFY_DYNAMICCOMBO_V3",
+     "link": null
+    },
+    {
+     "name": "codec",
+     "type": "COMFY_DYNAMICCOMBO_V3",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "video",
+     "type": "VIDEO",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SaveVideo",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "H3MangaStudio/vlm01"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "H3MangaStudio/vlm01"
+   }
+  },
+  {
+   "id": 31,
+   "type": "PreviewAny",
+   "title": "预览 · VLM 解读报告（页型/格数/花费）",
+   "pos": [
+    2008,
+    1662
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 21,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 52
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 32,
+   "type": "PreviewAny",
+   "title": "预览 · VLM 分镜文本（可贴回 ③）",
+   "pos": [
+    2494,
+    1662
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 23,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 53
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 33,
+   "type": "PreviewAny",
+   "title": "预览 · 槽位对照表",
+   "pos": [
+    2008,
+    1822
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 28,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 54
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 34,
+   "type": "H3MangaEpisodeRender",
+   "title": "⑦ 批量出镜 ★｜顺序跑完全部镜头",
+   "pos": [
+    1004,
+    1402
+   ],
+   "size": [
+    430,
+    740
+   ],
+   "flags": {},
+   "order": 26,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 55
+    },
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 56
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 57
+    },
+    {
+     "name": "plan",
+     "type": "H3_MANGA_PLAN",
+     "link": 59
+    },
+    {
+     "name": "audio_vae",
+     "type": "VAE",
+     "link": 58
+    },
+    {
+     "name": "refs",
+     "type": "H3_MANGA_REFS",
+     "link": 60
+    },
+    {
+     "name": "board",
+     "type": "H3_MANGA_BOARD",
+     "link": 61
+    }
+   ],
+   "outputs": [
+    {
+     "name": "帧序列",
+     "type": "IMAGE",
+     "links": [
+      62
+     ]
+    },
+    {
+     "name": "音频",
+     "type": "AUDIO",
+     "links": [
+      63
+     ]
+    },
+    {
+     "name": "报告",
+     "type": "STRING",
+     "links": [
+      65
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "H3MangaEpisodeRender",
+    "cnr_id": "ComfyUI_H3MangaStudio"
+   },
+   "widgets_values": [
+    "res_multistep",
+    "simple",
+    8,
+    12.0,
+    3.0,
+    "match",
+    "none",
+    1.0,
+    0,
+    "randomize",
+    0,
+    "",
+    "skip",
+    true,
+    "none",
+    1.3,
+    10.0,
+    0.2,
+    12288,
+    "exact_kv_and_rows"
+   ],
+   "widgets_values_named": {
+    "sampler_name": "res_multistep",
+    "scheduler": "simple",
+    "steps": 8,
+    "shift_video": 12.0,
+    "shift_audio": 3.0,
+    "ref_image_size": "match",
+    "lora_name": "none",
+    "lora_strength": 1.0,
+    "base_seed": 0,
+    "control_after_generate": "randomize",
+    "max_shots": 0,
+    "skip_done_ids": "",
+    "on_error": "skip",
+    "unload_stages": true,
+    "sparse_attn": "none",
+    "sparse_tau": 1.3,
+    "sparse_keep_percent": 10.0,
+    "sparse_start_percent": 0.2,
+    "sparse_min_tokens": 12288,
+    "sparse_sink": "exact_kv_and_rows"
+   }
+  },
+  {
+   "id": 35,
+   "type": "CreateVideo",
+   "title": "合成 · 整页（24fps）",
+   "pos": [
+    1490,
+    1402
+   ],
+   "size": [
+    430,
+    220
+   ],
+   "flags": {},
+   "order": 29,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 62
+    },
+    {
+     "name": "audio",
+     "type": "AUDIO",
+     "link": 63
+    }
+   ],
+   "outputs": [
+    {
+     "name": "VIDEO",
+     "type": "VIDEO",
+     "links": [
+      64
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CreateVideo",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    24,
+    "auto",
+    "sRGB",
+    "none"
+   ],
+   "widgets_values_named": {
+    "fps": 24,
+    "bit_depth": "auto",
+    "color_space": "sRGB",
+    "codec": "none"
+   }
+  },
+  {
+   "id": 36,
+   "type": "SaveVideo",
+   "title": "保存 · 整页视频",
+   "pos": [
+    1004,
+    2182
+   ],
+   "size": [
+    430,
+    168
+   ],
+   "flags": {},
+   "order": 32,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "video",
+     "type": "VIDEO",
+     "link": 64
+    },
+    {
+     "name": "format",
+     "type": "COMFY_DYNAMICCOMBO_V3",
+     "link": null
+    },
+    {
+     "name": "codec",
+     "type": "COMFY_DYNAMICCOMBO_V3",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "video",
+     "type": "VIDEO",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SaveVideo",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "H3MangaStudio/page"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "H3MangaStudio/page"
+   }
+  },
+  {
+   "id": 37,
+   "type": "PreviewAny",
+   "title": "预览 · 批量渲染报告",
+   "pos": [
+    1490,
+    2182
+   ],
+   "size": [
+    430,
+    120
+   ],
+   "flags": {},
+   "order": 30,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 65
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny",
+    "cnr_id": "comfy-core"
+   }
+  },
+  {
+   "id": 38,
+   "type": "MarkdownNote",
+   "title": "使用说明（VLM 全自动版）",
+   "pos": [
+    3012,
+    1402
+   ],
+   "size": [
+    430,
+    156
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "properties": {
+    "Node name for S&R": "MarkdownNote",
+    "cnr_id": "comfy-core"
+   },
+   "widgets_values": [
+    "# H3 Manga Studio · VLM 全自动版（v0.79）\n\n这一版把「**看漫画 → 出分镜**」也交给模型 —— 补上整条链路里唯一还靠人肉的一环。\n\n数据流：\n  LoadImage(漫画页) ─┬─► ① 切分镜格 ──board────┐\n                     │                         ├─► ⑬ VLM 漫画解读（逐格读画面）\n                     └──整页原图───────────────┘          │\n  LoadImage(角色卡) ─► ② 参考包                          ▼\n                                            ⑭ VLM 转分镜计划（纯本地，不花钱）\n                                                        │\n                      ④ 分镜绑定 → ⑤ 提示词装配 → ⑫-A → 官方多参节点\n                                        → 你的采样链 → 解码 → CreateVideo → SaveVideo\n\n## ★ 第一次用必读：配 API key\n\n⑬ 要访问多模态大模型（OpenAI 兼容协议）。**别把 key 填进节点** ——\n它会被写进工作流文件、进而被提交进 git。用环境变量：\n\n    set VLM_API_KEY=sk-xxxxxxxx\n    （然后**重启 ComfyUI**，环境变量只在启动时读）\n\n临时调试也可以直接填 ⑬ 的 `api_key`，但别保存/分享那份工作流。\n\n## 推荐模型（实测）\n\n| 模型 | 速度 | 说明 |\n|---|---|---|\n| **qwen3.5-omni-plus** ★ | 6~10 s/页 | 首选。格数判断与几何切格 12/12 一致 |\n| qwen3-vl-plus | ~20 s/页 | 备选，也是内容审核被拦时的回退模型 |\n| ⚠ qwen3.8-max / deepseek-v4.1-flash | — | **没有视觉能力**，传图会返回空 |\n\n默认端点是阿里云百炼。本地 Ollama 可填 `http://127.0.0.1:11434/v1`。\n\n## 先小批验证，再全量\n\n⑬ 的 `max_pages` 默认 **1**（只读第 1 页）。确认效果与花费都 OK 后改 **0** 跑全部。\n量级参考：约 **3,000 tokens/页**、**6~11 秒/页**。\n\n## 哪些字段可信\n\n* **格数 / 画面内容 / 角色 / 页型** —— 跨模型稳定，可以直接用；\n* **`shots`（一格几镜）** —— **跨次运行不稳定**（同一页可能跑出不同镜数），\n  已按「保留 VLM 判断」处理。不认同就在 ⑭ 把 `force_shots` 设成 1 统一压平。\n* 封面 / 设定页 / 目录页会被**自动跳过**（不出镜头）—— 这是几何切格给不出的信号。\n  想保留就在 ⑭ 打开 `include_non_narrative`。\n\n## 想改哪里\n\n* 画幅 / 时长 / 镜数 → 改 **⑭**（不调 API，随便改、不花钱）\n* 想手工润色分镜 → 把 **⑭ 的「分镜文本」**复制出来改完，贴进 **③**\n  （把 ④ 的 `plan` 改接 ③，③ 用 `source=inline`）\n* 想换采样 / 加放大 / 二采 → 从 ⑫-A 之后随意改（和官方接线版共用后半段）\n"
+   ],
+   "widgets_values_named": {
+    "text": "# H3 Manga Studio · VLM 全自动版（v0.79）\n\n这一版把「**看漫画 → 出分镜**」也交给模型 —— 补上整条链路里唯一还靠人肉的一环。\n\n数据流：\n  LoadImage(漫画页) ─┬─► ① 切分镜格 ──board────┐\n                     │                         ├─► ⑬ VLM 漫画解读（逐格读画面）\n                     └──整页原图───────────────┘          │\n  LoadImage(角色卡) ─► ② 参考包                          ▼\n                                            ⑭ VLM 转分镜计划（纯本地，不花钱）\n                                                        │\n                      ④ 分镜绑定 → ⑤ 提示词装配 → ⑫-A → 官方多参节点\n                                        → 你的采样链 → 解码 → CreateVideo → SaveVideo\n\n## ★ 第一次用必读：配 API key\n\n⑬ 要访问多模态大模型（OpenAI 兼容协议）。**别把 key 填进节点** ——\n它会被写进工作流文件、进而被提交进 git。用环境变量：\n\n    set VLM_API_KEY=sk-xxxxxxxx\n    （然后**重启 ComfyUI**，环境变量只在启动时读）\n\n临时调试也可以直接填 ⑬ 的 `api_key`，但别保存/分享那份工作流。\n\n## 推荐模型（实测）\n\n| 模型 | 速度 | 说明 |\n|---|---|---|\n| **qwen3.5-omni-plus** ★ | 6~10 s/页 | 首选。格数判断与几何切格 12/12 一致 |\n| qwen3-vl-plus | ~20 s/页 | 备选，也是内容审核被拦时的回退模型 |\n| ⚠ qwen3.8-max / deepseek-v4.1-flash | — | **没有视觉能力**，传图会返回空 |\n\n默认端点是阿里云百炼。本地 Ollama 可填 `http://127.0.0.1:11434/v1`。\n\n## 先小批验证，再全量\n\n⑬ 的 `max_pages` 默认 **1**（只读第 1 页）。确认效果与花费都 OK 后改 **0** 跑全部。\n量级参考：约 **3,000 tokens/页**、**6~11 秒/页**。\n\n## 哪些字段可信\n\n* **格数 / 画面内容 / 角色 / 页型** —— 跨模型稳定，可以直接用；\n* **`shots`（一格几镜）** —— **跨次运行不稳定**（同一页可能跑出不同镜数），\n  已按「保留 VLM 判断」处理。不认同就在 ⑭ 把 `force_shots` 设成 1 统一压平。\n* 封面 / 设定页 / 目录页会被**自动跳过**（不出镜头）—— 这是几何切格给不出的信号。\n  想保留就在 ⑭ 打开 `include_non_narrative`。\n\n## 想改哪里\n\n* 画幅 / 时长 / 镜数 → 改 **⑭**（不调 API，随便改、不花钱）\n* 想手工润色分镜 → 把 **⑭ 的「分镜文本」**复制出来改完，贴进 **③**\n  （把 ④ 的 `plan` 改接 ③，③ 用 `source=inline`）\n* 想换采样 / 加放大 / 二采 → 从 ⑫-A 之后随意改（和官方接线版共用后半段）\n"
+   }
+  }
+ ],
+ "links": [
+  [
+   1,
+   2,
+   0,
+   21,
+   0,
+   "CLIP"
+  ],
+  [
+   2,
+   3,
+   0,
+   21,
+   1,
+   "VAE"
+  ],
+  [
+   3,
+   4,
+   0,
+   21,
+   2,
+   "VAE"
+  ],
+  [
+   4,
+   7,
+   0,
+   10,
+   0,
+   "IMAGE"
+  ],
+  [
+   5,
+   8,
+   0,
+   15,
+   1,
+   "IMAGE"
+  ],
+  [
+   6,
+   9,
+   0,
+   15,
+   2,
+   "IMAGE"
+  ],
+  [
+   7,
+   10,
+   1,
+   11,
+   0,
+   "IMAGE"
+  ],
+  [
+   8,
+   10,
+   3,
+   12,
+   0,
+   "IMAGE"
+  ],
+  [
+   9,
+   10,
+   2,
+   13,
+   0,
+   "STRING"
+  ],
+  [
+   10,
+   10,
+   1,
+   14,
+   0,
+   "IMAGE"
+  ],
+  [
+   11,
+   7,
+   0,
+   16,
+   0,
+   "IMAGE"
+  ],
+  [
+   12,
+   10,
+   0,
+   16,
+   1,
+   "H3_MANGA_BOARD"
+  ],
+  [
+   13,
+   16,
+   0,
+   17,
+   0,
+   "H3_MANGA_VLM"
+  ],
+  [
+   14,
+   17,
+   0,
+   18,
+   0,
+   "H3_MANGA_PLAN"
+  ],
+  [
+   15,
+   10,
+   0,
+   18,
+   1,
+   "H3_MANGA_BOARD"
+  ],
+  [
+   16,
+   15,
+   0,
+   18,
+   2,
+   "H3_MANGA_REFS"
+  ],
+  [
+   17,
+   18,
+   0,
+   19,
+   0,
+   "H3_MANGA_PLAN"
+  ],
+  [
+   18,
+   15,
+   0,
+   19,
+   1,
+   "H3_MANGA_REFS"
+  ],
+  [
+   19,
+   19,
+   0,
+   20,
+   0,
+   "H3_MANGA_PLAN"
+  ],
+  [
+   20,
+   15,
+   0,
+   20,
+   1,
+   "H3_MANGA_REFS"
+  ],
+  [
+   21,
+   10,
+   0,
+   20,
+   2,
+   "H3_MANGA_BOARD"
+  ],
+  [
+   22,
+   20,
+   0,
+   21,
+   12,
+   "STRING"
+  ],
+  [
+   23,
+   20,
+   1,
+   21,
+   3,
+   "IMAGE"
+  ],
+  [
+   24,
+   20,
+   2,
+   21,
+   4,
+   "IMAGE"
+  ],
+  [
+   25,
+   20,
+   3,
+   21,
+   5,
+   "IMAGE"
+  ],
+  [
+   26,
+   20,
+   4,
+   21,
+   6,
+   "IMAGE"
+  ],
+  [
+   27,
+   20,
+   5,
+   21,
+   7,
+   "IMAGE"
+  ],
+  [
+   28,
+   20,
+   6,
+   21,
+   8,
+   "IMAGE"
+  ],
+  [
+   29,
+   20,
+   7,
+   21,
+   9,
+   "IMAGE"
+  ],
+  [
+   30,
+   20,
+   8,
+   21,
+   10,
+   "IMAGE"
+  ],
+  [
+   31,
+   20,
+   9,
+   21,
+   11,
+   "IMAGE"
+  ],
+  [
+   32,
+   20,
+   10,
+   21,
+   13,
+   "INT"
+  ],
+  [
+   33,
+   20,
+   11,
+   21,
+   14,
+   "INT"
+  ],
+  [
+   34,
+   20,
+   12,
+   21,
+   15,
+   "INT"
+  ],
+  [
+   35,
+   21,
+   0,
+   25,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   36,
+   1,
+   0,
+   5,
+   0,
+   "MODEL"
+  ],
+  [
+   37,
+   5,
+   0,
+   6,
+   0,
+   "MODEL"
+  ],
+  [
+   38,
+   6,
+   0,
+   25,
+   0,
+   "MODEL"
+  ],
+  [
+   39,
+   6,
+   0,
+   23,
+   0,
+   "MODEL"
+  ],
+  [
+   40,
+   22,
+   0,
+   26,
+   2,
+   "SAMPLER"
+  ],
+  [
+   41,
+   23,
+   0,
+   26,
+   3,
+   "SIGMAS"
+  ],
+  [
+   42,
+   24,
+   0,
+   26,
+   0,
+   "NOISE"
+  ],
+  [
+   43,
+   25,
+   0,
+   26,
+   1,
+   "GUIDER"
+  ],
+  [
+   44,
+   21,
+   1,
+   26,
+   4,
+   "LATENT"
+  ],
+  [
+   45,
+   26,
+   0,
+   27,
+   0,
+   "LATENT"
+  ],
+  [
+   46,
+   3,
+   0,
+   27,
+   1,
+   "VAE"
+  ],
+  [
+   47,
+   26,
+   0,
+   28,
+   0,
+   "LATENT"
+  ],
+  [
+   48,
+   4,
+   0,
+   28,
+   1,
+   "VAE"
+  ],
+  [
+   49,
+   27,
+   0,
+   29,
+   0,
+   "IMAGE"
+  ],
+  [
+   50,
+   28,
+   0,
+   29,
+   1,
+   "AUDIO"
+  ],
+  [
+   51,
+   29,
+   0,
+   30,
+   0,
+   "VIDEO"
+  ],
+  [
+   52,
+   16,
+   1,
+   31,
+   0,
+   "STRING"
+  ],
+  [
+   53,
+   17,
+   1,
+   32,
+   0,
+   "STRING"
+  ],
+  [
+   54,
+   20,
+   13,
+   33,
+   0,
+   "STRING"
+  ],
+  [
+   55,
+   6,
+   0,
+   34,
+   0,
+   "MODEL"
+  ],
+  [
+   56,
+   2,
+   0,
+   34,
+   1,
+   "CLIP"
+  ],
+  [
+   57,
+   3,
+   0,
+   34,
+   2,
+   "VAE"
+  ],
+  [
+   58,
+   4,
+   0,
+   34,
+   4,
+   "VAE"
+  ],
+  [
+   59,
+   19,
+   0,
+   34,
+   3,
+   "H3_MANGA_PLAN"
+  ],
+  [
+   60,
+   15,
+   0,
+   34,
+   5,
+   "H3_MANGA_REFS"
+  ],
+  [
+   61,
+   10,
+   0,
+   34,
+   6,
+   "H3_MANGA_BOARD"
+  ],
+  [
+   62,
+   34,
+   0,
+   35,
+   0,
+   "IMAGE"
+  ],
+  [
+   63,
+   34,
+   1,
+   35,
+   1,
+   "AUDIO"
+  ],
+  [
+   64,
+   35,
+   0,
+   36,
+   0,
+   "VIDEO"
+  ],
+  [
+   65,
+   34,
+   2,
+   37,
+   0,
+   "STRING"
+  ]
+ ],
+ "groups": [
+  {
+   "id": 1,
+   "title": "模型",
+   "bounding": [
+    -30,
+    -58,
+    976,
+    390
+   ],
+   "color": "#3f789e",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 2,
+   "title": "LoRA",
+   "bounding": [
+    974,
+    -58,
+    976,
+    230
+   ],
+   "color": "#0f766e",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 3,
+   "title": "输入图",
+   "bounding": [
+    1978,
+    -58,
+    976,
+    368
+   ],
+   "color": "#88A",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 4,
+   "title": "素材",
+   "bounding": [
+    2982,
+    -58,
+    976,
+    764
+   ],
+   "color": "#a1309b",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 5,
+   "title": "VLM",
+   "bounding": [
+    2982,
+    714,
+    976,
+    608
+   ],
+   "color": "#c05621",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 6,
+   "title": "预览",
+   "bounding": [
+    1978,
+    714,
+    976,
+    368
+   ],
+   "color": "#4d7c0f",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 7,
+   "title": "编排",
+   "bounding": [
+    974,
+    714,
+    976,
+    622
+   ],
+   "color": "#b58b2a",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 8,
+   "title": "前置",
+   "bounding": [
+    -30,
+    714,
+    490,
+    308
+   ],
+   "color": "#2f8f6f",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 9,
+   "title": "采样",
+   "bounding": [
+    -30,
+    1344,
+    976,
+    1262
+   ],
+   "color": "#8a4fbf",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 10,
+   "title": "批量",
+   "bounding": [
+    974,
+    1344,
+    976,
+    1036
+   ],
+   "color": "#7c2d12",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 11,
+   "title": "输出",
+   "bounding": [
+    1978,
+    1344,
+    976,
+    628
+   ],
+   "color": "#b06634",
+   "font_size": 26,
+   "flags": {}
+  },
+  {
+   "id": 12,
+   "title": "说明",
+   "bounding": [
+    2982,
+    1344,
+    490,
+    244
+   ],
+   "color": "#666",
+   "font_size": 26,
+   "flags": {}
+  }
+ ],
+ "config": {},
+ "extra": {
+  "ds": {
+   "scale": 0.3,
+   "offset": [
+    72,
+    81
+   ]
+  },
+  "note": "由 ComfyUI_H3MangaStudio/tools/make_example_workflow.py 生成；用 tools/verify_workflow.py 校验"
+ },
+ "version": 0.4
+}

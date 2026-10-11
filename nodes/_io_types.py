@@ -10,13 +10,22 @@ from __future__ import annotations
 from comfy_api.latest import io
 
 try:
-    from ..core.types import TYPE_BOARD, TYPE_PLAN, TYPE_REFS
+    from ..core.types import TYPE_BOARD, TYPE_PLAN, TYPE_REFS, TYPE_VLM
 except ImportError:  # pragma: no cover
-    from core.types import TYPE_BOARD, TYPE_PLAN, TYPE_REFS
+    from core.types import TYPE_BOARD, TYPE_PLAN, TYPE_REFS, TYPE_VLM
 
 RefsType = io.Custom(TYPE_REFS)
 PlanType = io.Custom(TYPE_PLAN)
 BoardType = io.Custom(TYPE_BOARD)
+VLMType = io.Custom(TYPE_VLM)
+
+
+def vlm_in(name: str = "vlm", **kw):
+    return VLMType.Input(name, **kw)
+
+
+def vlm_out(**kw):
+    return VLMType.Output(**kw)
 
 
 def refs_in(name: str = "refs", **kw):

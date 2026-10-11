@@ -250,7 +250,9 @@ class H3MangaPanelSplitter(io.ComfyNode):
                 grid_imgs.append(_np_to_tensor(_grid_overlay(page, shapes)))
 
         board = Board(panels=all_panels, images=[], pages=int(arr.shape[0]),
-                      source="splitter")
+                      source="splitter",
+                      page_size=(int(arr.shape[2]), int(arr.shape[1])))
+        # page_size 供 ③ 的 size_mode=page 反推官方规范画幅；取第一页尺寸
         grid_batch = (iops.stack_images(grid_imgs) if grid_imgs
                       else iops.empty_image_batch())
 
@@ -354,20 +356,23 @@ class H3MangaRefPack(io.ComfyNode):
             description=(
                 "把角色定妆图、风格基准图、参考音频/视频打包成有序参考包，"
                 "并自动算出 <Picture i> / <Video k> / <Audio j> 序号映射表。\n"
-                "核心约定：**角色名列表与图槽一一对应**——第一个名字就是第一张图；"
-                "同名重复 = 同一角色的多张定妆图（正面/侧面/全身）。"
+                "核心约定：**角色名列表与图槽一一对应**——第一个名字就是第一张图。\n"
+                "**一角色一图（默认开）**：每个角色只锁一张「四视图 / 角色设定卡」，"
+                "同名重复写只保留第一张，避免多图之间的服装/角度歧义。"
             ),
             inputs=[
                 _inp(io.String.Input, "character_names", _L("character_names"),
                      default="", multiline=True,
                      tooltip="逗号或换行分隔。第 N 个名字 ↔ 第 N 个图槽。\n"
-                             "名字会成为分镜里 @名字 的引用目标。"),
+                             "名字会成为分镜里 @名字 的引用目标。\n"
+                             "一角色一图时：每个角色填**一个**名字即可。"),
                 io.Autogrow.Input(
                     "character_images",
                     optional=True,
                     display_name=_L("character_images"),
                     tooltip="第 N 个图槽 ↔ character_names 里的第 N 个名字。\n"
-                            "同名重复 = 同一角色的多张定妆图（正面/侧面/全身）。\n"
+                            "★ 一角色一图（默认）：一个角色 = 一张「四视图 / 角色设定卡」，"
+                            "把正/侧/背/表情并到同一张图里。\n"
                             "接批次张量时会按帧拆开，每帧算一张参考图。",
                     template=io.Autogrow.TemplatePrefix(
                         input=_inp(io.Image.Input, "character_image", "角色定妆图"),
@@ -420,6 +425,14 @@ class H3MangaRefPack(io.ComfyNode):
                 _inp(io.Combo.Input, "name_source", _L("name_source"),
                      options=["slot", "index"], default="slot",
                      tooltip="slot=用你填的名字做 id；index=强制 ref1/ref2（名字只做显示）"),
+                _inp(io.Boolean.Input, "one_image_per_character",
+                     _L("one_image_per_character"), default=True,
+                     tooltip="★ 默认**开** —— 一个角色只锁一张参考图。\n"
+                             "同名重复写只保留第一张，其余忽略（报告给 warning）。\n"
+                             "推荐每个角色用一张「四视图 / 角色设定卡」，把正/侧/背/表情\n"
+                             "并到同一张图里 —— 多张独立图之间若有服装/角度差异，\n"
+                             "模型会摇摆，反而不如一张清晰的四视图稳。\n"
+                             "关掉 = 旧行为：同名重复按顺序吃掉多个图槽（角色换装、多形态）。"),
             ],
             outputs=[
                 refs_out(display_name=_OL["refs"]),
@@ -431,7 +444,8 @@ class H3MangaRefPack(io.ComfyNode):
     def execute(cls, character_names="", character_images=None, character_describes="",
                 style_name="style_main", style_images=None, audio_names="", audios=None,
                 video_names="", videos=None, video_audios=None,
-                max_ref_images=H3_MAX_REF_IMAGES, name_source="slot") -> io.NodeOutput:
+                max_ref_images=H3_MAX_REF_IMAGES, name_source="slot",
+                one_image_per_character=True) -> io.NodeOutput:
         pack = rf.build_ref_pack(
             character_names=character_names,
             character_images=character_images,
@@ -445,6 +459,7 @@ class H3MangaRefPack(io.ComfyNode):
             video_audios=video_audios,
             max_ref_images=int(max_ref_images),
             name_source=name_source,
+            one_image_per_character=bool(one_image_per_character),
         )
         table = pack.describe_table()
         return io.NodeOutput(pack, table, ui={"h3manga_panel": [table]})

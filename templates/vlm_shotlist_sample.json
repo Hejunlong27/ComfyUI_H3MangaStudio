@@ -1,0 +1,152 @@
+{
+  "schema": "h3manga.vlm_shotlist/1",
+  "_note": [
+    "VLM 页级解读的黄金样例（数据来自 2026-10-10 对 Reborn 第30卷 096/097 两页的真实读图）。",
+    "用途：① 作为 tools/vlm_shotlist.py 的 few-shot 样例；② 作为 ③ 分镜清单的字段契约验收标准。",
+    "★ 字段名与 ③ 的块文本字段一一对应，可直接转成分镜清单。",
+    "★ 硬约束：不得出现任何 <Picture i> / <Video k> 标签（序号由代码注入）；",
+    "   characters 只能取自给定的角色闭集；panel 必须在 ① 实际切出的格号范围内。"
+  ],
+  "character_closed_set": ["纲吉", "Reborn", "京子", "蓝波", "碧洋琪"],
+
+  "pages": [
+    {
+      "page": 0,
+      "page_name": "Reborn_30_096.png",
+      "page_size": [1164, 1800],
+      "page_kind": "narrative",
+      "panels": [
+        {
+          "panel": 0,
+          "shots": 1,
+          "content": "黄昏住宅区街景空镜，屋顶、电线杆与交错电线，招牌上写着「早晨」",
+          "action": "镜头缓慢上摇，掠过屋顶与天线，停在招牌上",
+          "camera": "tilt_up",
+          "characters": [],
+          "dialogue_draft": ["阿綱，你不吃早飯嗎？"],
+          "duration_hint": 3,
+          "confidence": 0.92
+        },
+        {
+          "panel": 1,
+          "shots": 2,
+          "content": "短发少女（京子）的笑脸特写 | 饭桌上的早餐争执，纲吉边吃边起身，Reborn 坐在桌上",
+          "action": "贴近少女侧脸，她微微偏头微笑 | 纲吉推开椅子起身，桌旁众人各自反应",
+          "camera": "close_up | medium_shot",
+          "characters": ["京子", "纲吉", "Reborn"],
+          "dialogue_draft": ["今天你應該很期待吧？", "不吃了，我要遲到了！"],
+          "duration_hint": 6,
+          "confidence": 0.85,
+          "_why_multi_shot": [
+            "该格内部有两个互不相连的视点：左半是独立的少女特写（人物与背景都与右半不同），",
+            "右半是饭桌全景。两半之间没有过渡，属于「一格两镜」。",
+            "★ 这是几何切格拿不到的信息 —— 几何只会给出 1 个格。"
+          ]
+        },
+        {
+          "panel": 2,
+          "shots": 1,
+          "content": "早餐特写，京子与蓝波在吃面包，碗碟与食物占满画面",
+          "action": "静态中景，蓝波把面包塞进嘴里",
+          "camera": "static",
+          "characters": ["京子", "蓝波"],
+          "dialogue_draft": ["集體轉學生是什麼？", "那個不是食物啦，藍波！"],
+          "duration_hint": 4,
+          "confidence": 0.88
+        }
+      ],
+      "_summary_by_vlm": "日常早餐场景起手：街景空镜转场 → 出门前的饭桌吵闹 → 早餐特写收尾。信息量低，属于铺垫段落。"
+    },
+
+    {
+      "page": 1,
+      "page_name": "Reborn_30_097.png",
+      "page_size": [1164, 1800],
+      "page_kind": "narrative",
+      "panels": [
+        {
+          "panel": 0,
+          "shots": 1,
+          "content": "京子的笑脸与学校建筑叠画，两个大旁白框交代「转学生要来」的背景",
+          "action": "画面缓慢推近，旁白逐条浮现",
+          "camera": "slow_push_in",
+          "characters": ["京子"],
+          "dialogue_draft": [],
+          "duration_hint": 5,
+          "confidence": 0.9,
+          "_note": "这一格以旁白为主（说明性内容），台词很少"
+        },
+        {
+          "panel": 1,
+          "shots": 1,
+          "content": "纲吉在玄关穿鞋出门，回头看屋里",
+          "action": "纲吉边穿鞋边回头喊话，门半开着",
+          "camera": "medium_shot",
+          "characters": ["纲吉"],
+          "dialogue_draft": ["那我上學去囉！", "路上小心"],
+          "duration_hint": 4,
+          "confidence": 0.86
+        },
+        {
+          "panel": 2,
+          "shots": 1,
+          "content": "蓝波大哭的正面特写，背景是饭桌",
+          "action": "蓝波挥舞手脚大哭，旁人出声制止",
+          "camera": "close_up",
+          "characters": ["蓝波"],
+          "dialogue_draft": ["你不要聽一半就隨便插嘴啦！藍波！"],
+          "duration_hint": 4,
+          "confidence": 0.84
+        },
+        {
+          "panel": 3,
+          "shots": 1,
+          "content": "街景空镜，路边告示牌特写（收尾镜）",
+          "action": "镜头静止，风吹动告示牌边角",
+          "camera": "static",
+          "characters": [],
+          "dialogue_draft": [],
+          "duration_hint": 3,
+          "confidence": 0.88
+        },
+        {
+          "panel": 4,
+          "shots": 1,
+          "content": "纲吉笑着抬头看天，表情放松",
+          "action": "纲吉边走边笑，抬头看向上方",
+          "camera": "medium_shot",
+          "characters": ["纲吉"],
+          "dialogue_draft": ["應該還來得及吧…"],
+          "duration_hint": 4,
+          "confidence": 0.87
+        },
+        {
+          "panel": 5,
+          "shots": 1,
+          "content": "纲吉与同伴走在街上，远处出现陌生制服的学生",
+          "action": "一行人并肩走过，视线被街对面的身影吸引",
+          "camera": "wide_shot",
+          "characters": ["纲吉"],
+          "dialogue_draft": ["嗯？沒見過的制服…"],
+          "duration_hint": 5,
+          "confidence": 0.83
+        }
+      ],
+      "_summary_by_vlm": "上学路上的过渡段：旁白交代转学生设定 → 出门 → 街上初遇可疑身影，为下一场的冲突埋伏笔。"
+    }
+  ],
+
+  "_comparison_with_geometry": {
+    "_note": "同一批页面用几何切格（frame=component）得到的结果，用于对照。",
+    "Reborn_30_096.png": {
+      "geometry_panels": 3,
+      "vlm_shots": 4,
+      "delta": "+1（几何漏掉了 panel 1 内的第二个视点）"
+    },
+    "Reborn_30_097.png": {
+      "geometry_panels": 6,
+      "vlm_shots": 6,
+      "delta": "0（格数与逐格归属一致）"
+    }
+  }
+}

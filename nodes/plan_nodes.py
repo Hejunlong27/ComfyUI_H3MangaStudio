@@ -16,12 +16,14 @@ try:
     from ..core import plan as pl
     from ..core import prompt_build as pb
     from ..core import script_parse as sp
+    from ..core import types as _T
     from ..core.ui import NODE_LABELS as _NL, OUTPUT_LABELS as _OL
     from ..core.ui import safe_display_name as _inp, label_input as _L
 except ImportError:  # pragma: no cover
     from core import plan as pl
     from core import prompt_build as pb
     from core import script_parse as sp
+    from core import types as _T
     from core.ui import NODE_LABELS as _NL, OUTPUT_LABELS as _OL
     from core.ui import safe_display_name as _inp, label_input as _L
 
@@ -37,18 +39,71 @@ class H3MangaScriptLoader(io.ComfyNode):
             display_name=_NL["H3MangaScriptLoader"],
             category="H3 Manga/编排",
             description=(
-                "加载分镜清单（JSON 文件 / 手写块文本），自动做 17n+5 帧对齐、"
-                "32 倍数画幅对齐，并输出结构化的分镜计划。\n"
-                "块文本格式见插件 templates/shot_list_template.txt。"
+                "生成 / 加载分镜清单，自动做 17n+5 帧对齐、32 倍数画幅对齐，"
+                "输出结构化的分镜计划。\n"
+                "★ source=board：**从 ① 的分镜格自动出镜**，不用再手写全表；"
+                "source=hybrid：board 自动稿为底、文本只改要改的那几镜。\n"
+                "★ **一格多镜**：镜头数 ≠ 格数。一格画了两个时间相时，"
+                "用 `auto_shots_per_panel`（整卷批量）或文本里的 `shots: N`（逐格）"
+                "把该格展开成多个镜头 —— 它们共用同一张格图当参考锚点。\n"
+                "画幅可按**官方 adapt_canvas 规则**选比例（16:9 → 1344x768 等）。\n"
+                "块文本字段见 templates/shot_list_template.txt。"
             ),
             inputs=[
                 _inp(io.Combo.Input, "source", _L("source"),
-                     options=["file", "inline", "auto"], default="file"),
+                     options=["auto", "board", "hybrid", "inline", "file"],
+                     default="auto",
+                     tooltip="board  = 从 ① 的分镜格自动出镜（一格一镜）\n"
+                             "hybrid = board 为底，文本按 panel 覆盖（推荐）\n"
+                             "inline = 只用粘贴的文本 / file = 读文件\n"
+                             "auto   = 有文本就用文本，没有才从 board 出"),
                 _inp(io.String.Input, "file_path", _L("file_path"),
                      default="", tooltip="分镜清单绝对路径（.json 或 .txt）"),
                 _inp(io.String.Input, "inline_text", _L("inline_text"),
                      default="", multiline=True,
-                     tooltip="直接粘贴分镜内容。JSON 或块文本都行。"),
+                     tooltip="分镜文本。每镜可填的字段：\n"
+                             "  panel: 分镜格号（对应 ① 的第几格；hybrid 靠它覆盖）\n"
+                             "  ★ shots: N —— 这一格**展开成 N 个镜头**（一格多镜）。\n"
+                             "     action / content / dialogue 用 `A | B | C` 分段对应各镜。\n"
+                             "  duration: 秒（**每镜**的时长）—— 会被 17n+5 对齐\n"
+                             "  content: 画面内容（人填，后续可自动填）\n"
+                             "  action: 动作  dialogue: 台词  speaker: 说话人\n"
+                             "  characters: 角色（逗号分隔）  camera: 运镜\n"
+                             "  size: 画幅（1344x768 或 16:9）—— 逐镜覆盖\n"
+                             "  extra / negative / seed / style\n"
+                             "格式：`=== s01 ===` 分段头 + 每行 `key: value`"),
+                board_in(name="board", display_name="分镜格", optional=True,
+                         tooltip="① 的分镜格。source=board / hybrid 必需；"
+                                 "size_mode=page 也用它取原页比例。"),
+                # ---- v0.7 新增：默认时长与画幅（追加在末尾，旧工作流不受影响）----
+                _inp(io.Float.Input, "default_duration", _L("default_duration"),
+                     default=5.0, min=0.2, max=60.0, step=0.1,
+                     tooltip="文本没写 duration 的镜头用这个秒数。\n"
+                             "同样会被 17n+5 对齐（5 → 124 帧 = 5.167s）。"),
+                _inp(io.Combo.Input, "size_mode", _L("size_mode"),
+                     options=list(_T.H3_SIZE_MODES), default=_T.SIZE_MODE_PRESET,
+                     tooltip="preset = 用比例预设（**对齐官方 adapt_canvas 规则**）\n"
+                             "page   = 跟随原漫画页比例（需要接 board）\n"
+                             "text   = 用文本里的 default_size / 逐镜 size"),
+                _inp(io.Combo.Input, "size_preset", _L("size_preset"),
+                     options=list(_T.H3_SIZE_PRESETS.keys()),
+                     default=_T.SIZE_PRESET_DEFAULT,
+                     tooltip="官方规范画幅（短边 768、面积 ≤768×1344、32 倍数）：\n"
+                             "  16:9 → 1344x768     4:3 → 1024x768     1:1 → 768x768\n"
+                             "  9:16 → 768x1344     3:4 → 768x1024     2:3 → 768x1152"),
+                _inp(io.Float.Input, "size_scale", _L("size_scale"),
+                     default=_T.DEFAULT_SIZE_SCALE, min=0.1, max=1.0, step=0.05,
+                     tooltip="在官方规范画幅上再按比例缩（显存不够就调小）。\n"
+                             "16:9 档位：0.5→672x384 · 0.6→800x448 · 0.75→1008x576 · 1.0→1344x768\n"
+                             "8GB 卡建议 0.5~0.6。"),
+                # ---- v0.71 新增：一格多镜（追加在末尾，旧工作流不受影响）----
+                _inp(io.Int.Input, "auto_shots_per_panel",
+                     _L("auto_shots_per_panel"), default=1, min=1, max=8, step=1,
+                     tooltip="board 自动出镜时**每格展开几镜**（默认 1 = 一格一镜）。\n"
+                             "「镜头数 ≠ 格数」：一个分镜格画了两个时间相（大格先全景再特写、\n"
+                             "格内插格）时，整卷都这样就把这里设成 2，比逐格手写省事。\n"
+                             "展开出的镜共用同一张格图当参考锚点，报告里标为 `panel x/N`。\n"
+                             "逐格差异：在文本里对该格写 `shots: N` 覆盖（hybrid 模式）。"),
             ],
             outputs=[
                 plan_out(display_name=_OL["plan"]),
@@ -57,17 +112,46 @@ class H3MangaScriptLoader(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, source="file", file_path="", inline_text="") -> io.NodeOutput:
-        plan = sp.load_plan(source=source, file_path=file_path, inline_text=inline_text)
-        report = plan.summary()
-        if plan.shots:
-            report += "\n" + "-" * 52 + "\n镜头明细：\n"
-            for s in plan.shots:
-                report += (
-                    f"  [{s.index:02d}] {s.id:<12} {s.duration:>5.1f}s "
-                    f"{s.width}x{s.height} panel={s.panel_index} "
-                    f"角色={','.join(s.characters) or '-'}\n"
+    def execute(cls, source="auto", file_path="", inline_text="", board=None,
+                default_duration=5.0, size_mode=_T.SIZE_MODE_PRESET,
+                size_preset=_T.SIZE_PRESET_DEFAULT,
+                size_scale=_T.DEFAULT_SIZE_SCALE,
+                auto_shots_per_panel=1) -> io.NodeOutput:
+        extra_warns: List[str] = []
+        mode = str(size_mode or _T.SIZE_MODE_PRESET).lower()
+
+        # ---- 画幅：text 模式交给文本（build_plan 会读 meta.default_size）----
+        size_override = None
+        if mode == _T.SIZE_MODE_TEXT:
+            size_note = "文本里的 default_size / 逐镜 size"
+        else:
+            page_size = tuple(getattr(board, "page_size", (0, 0)) or (0, 0))
+            if mode == _T.SIZE_MODE_PAGE and int(page_size[0]) <= 0:
+                extra_warns.append(
+                    "size_mode=page 但 board 没有页尺寸（① 未接 / 旧工作流）—— 已回退比例预设"
                 )
+                mode = _T.SIZE_MODE_PRESET
+            w, h, size_note = _T.resolve_canvas(
+                size_mode=mode, preset=str(size_preset),
+                page_size=page_size if int(page_size[0]) > 0 else None,
+                scale=float(size_scale),
+            )
+            size_override = (w, h, size_note)
+
+        plan = sp.load_plan(
+            source=str(source or "auto"), file_path=file_path,
+            inline_text=inline_text, default_duration=float(default_duration),
+            size_override=size_override, board=board,
+            shots_per_panel=int(auto_shots_per_panel),
+        )
+        for m in extra_warns:
+            plan.warnings.append(m)
+
+        report = plan.summary()
+        report += "\n" + "-" * 52
+        report += f"\n画幅来源：{size_note}"
+        report += f"\n镜头明细（共 {len(plan.shots)} 镜）：\n"
+        report += plan.shot_table()
         return io.NodeOutput(plan, report, ui={"h3manga_panel": [report]})
 
 

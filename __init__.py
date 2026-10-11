@@ -29,6 +29,10 @@ try:
         H3MangaShotConditioning,
         H3MangaEpisodeRender,
         H3MangaFreeMemory,
+        H3MangaShotOut,
+        H3MangaShotCond,
+        H3MangaVLMScribe,
+        H3MangaVLMPlan,
     )
 
     _NODES = [
@@ -37,6 +41,12 @@ try:
         H3MangaScriptLoader,
         H3MangaShotBinder,
         H3MangaPromptComposer,
+        # ★ v0.79：VLM 层（看图 → 结构化镜头表 → 分镜计划）
+        H3MangaVLMScribe,
+        H3MangaVLMPlan,
+        # ★ v0.7：前置出栈（插件到这两个节点为止，采样交回工作流）
+        H3MangaShotOut,
+        H3MangaShotCond,
         H3MangaShotConditioning,
         H3MangaEpisodeRender,
         H3MangaConsistencyAudit,

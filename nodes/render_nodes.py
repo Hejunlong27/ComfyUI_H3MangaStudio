@@ -340,6 +340,15 @@ class H3MangaEpisodeRender(io.ComfyNode):
         if not tasks:
             raise ValueError("展开后没有任何待渲染镜头（可能被 max_shots 或 skip_done_ids 全过滤了）")
 
+        # ★ 报告口径：让 max_shots 的效果**显式可见**。
+        #   真实事故：用户看到计划写「9.6s」、出片却只有 4s —— 因为本节点
+        #   max_shots=1 只渲了第 1 镜（计划两镜 107+124=231 帧=9.625s）。
+        if int(max_shots) and len(tasks) < len(plan.shots):
+            preflight["warnings"].append(
+                f"★ max_shots={int(max_shots)}：本次**只渲染前 {len(tasks)} 镜**，"
+                f"计划共 {len(plan.shots)} 镜。想要整集请把 max_shots 设为 0。"
+            )
+
         # ---- 模型补丁只做一次（shift + LoRA），避免每镜 clone ----
         patched = api.apply_sigma_shift(model, float(shift_video), float(shift_audio))
         if lora_name and lora_name != "none":
@@ -581,6 +590,15 @@ class H3MangaEpisodeRender(io.ComfyNode):
             "episode": plan.episode,
             "preflight": preflight,
             "scheduled": len(tasks),
+            # ★ 渲染范围：解释「计划 9.6s 却只出 4s」这类困惑的唯一地方
+            "scope": {
+                "plan_shots": len(plan.shots),
+                "rendered_shots": len(tasks),
+                "max_shots": int(max_shots),
+                "skipped_count": len(plan.shots) - len(tasks),
+                "planned_frames": plan.total_frames(),
+                "planned_seconds": round(plan.total_seconds(), 3),
+            },
             # 计数与明细分开命名：同名键会被后面的覆盖，
             # 早期版本把 done 写成 len(done) 又被明细覆盖，报告里就只剩列表了。
             "done_shots": len(done),
@@ -588,6 +606,9 @@ class H3MangaEpisodeRender(io.ComfyNode):
             "elapsed_sec": round(elapsed, 1),
             "per_shot_avg_sec": round(elapsed / max(1, len(done)), 1),
             "total_frames_out": int(frames_out.shape[0]) if frames_out is not None else 0,
+            "output_duration_sec": round(
+                (int(frames_out.shape[0]) / 24.0) if frames_out is not None else 0.0, 3
+            ),
             "cost": estimate_cost(plan, int(steps)),
             "params": {
                 "sampler": sampler_name, "scheduler": scheduler, "steps": int(steps),

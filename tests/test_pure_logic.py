@@ -18,7 +18,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _loader import core  # noqa: E402
+from _loader import core, PKG_DIR  # noqa: E402
 
 C = core()
 T = C.types
@@ -115,24 +115,75 @@ import numpy as np  # noqa: E402
 def fake_img(tag):
     return np.full((4, 4, 3), tag, dtype=np.float32)
 
-# 同名重复 = 同一角色的多张定妆图（正面/侧面/全身）
-pack = RF.build_ref_pack(
+# ---- ★ 一角色一图（默认）----
+# 每个角色只锁**一张**参考图：同名重复写只保留第一张，其余忽略 + warning。
+# 约定用「四视图 / 角色设定卡」把正/侧/背/表情并到一张图，避免多图之间的歧义。
+pack_single = RF.build_ref_pack(
     character_names="纲吉, 纲吉, Reborn",
     character_images=[fake_img(1), fake_img(2), fake_img(3)],
     character_describes="棕发橙眼，黑色学生制服\n黑西装婴儿，卷鬓角",
     style_name="基准风格",
     style_images=fake_img(9),
 )
-ok(len(pack.entries) == 3, f"参考包：2 角色 + 1 风格（实得 {len(pack.entries)}）")
-ok(len([e for e in pack.entries if e.kind == "character"]) == 2, "同名重复被合并成一个角色")
-ok(len(pack.entries[0].images) == 2, "纲吉拿到 2 张定妆图")
-ok(pack.entries[0].id == "纲吉", f"中文 id 原样保留（实得 {pack.entries[0].id}）")
-ok(pack.entries[2].kind == "style", "风格条目排在最后")
+ok(len(pack_single.entries) == 3,
+   f"参考包：2 角色 + 1 风格（实得 {len(pack_single.entries)}）")
+ok(len([e for e in pack_single.entries if e.kind == "character"]) == 2,
+   "同名重复被合并成一个角色")
+ok(len(pack_single.entries[0].images) == 1,
+   f"★ 一角色一图：纲吉只保留 1 张（实得 {len(pack_single.entries[0].images)}）")
+ok("一角色一图" in pack_single.source_note,
+   f"★ 被忽略的重复图槽必须发 warning，不能静默丢（实得 {pack_single.source_note[:48]!r}）")
+ok(pack_single.entries[0].id == "纲吉",
+   f"中文 id 原样保留（实得 {pack_single.entries[0].id}）")
+ok(pack_single.entries[2].kind == "style", "风格条目排在最后")
 
-# 名字少于图槽时必须给出可操作提示
+# ★ 反向验证：关掉开关必须完整回到旧行为（多图各自吃槽）
+pack_multi = RF.build_ref_pack(
+    character_names="纲吉, 纲吉, Reborn",
+    character_images=[fake_img(1), fake_img(2), fake_img(3)],
+    one_image_per_character=False,
+)
+ok(len(pack_multi.entries[0].images) == 2,
+   f"★ 反向验证：关掉开关后纲吉拿回 2 张（实得 {len(pack_multi.entries[0].images)}）")
+ok(pack_multi.source_note == "",
+   f"关掉开关后不该再报「一角色一图」（实得 {pack_multi.source_note!r}）")
+
+# 名字少于图槽时必须给出可操作提示（两种约定下的提示不同）
 pack_mismatch = RF.build_ref_pack(character_names="纲吉",
                                   character_images=[fake_img(1), fake_img(2)])
-ok("重复写一遍" in pack_mismatch.source_note, "名字/图槽数量不匹配时给出提示")
+ok("四视图" in pack_mismatch.source_note and "不要用重复名字" in pack_mismatch.source_note,
+   f"一角色一图：数量不匹配时提示改用四视图（实得 {pack_mismatch.source_note[:60]!r}）")
+pack_mismatch_multi = RF.build_ref_pack(character_names="纲吉",
+                                        character_images=[fake_img(1), fake_img(2)],
+                                        one_image_per_character=False)
+ok("重复写一遍" in pack_mismatch_multi.source_note,
+   "关掉开关后提示改回「把名字重复写一遍」")
+
+# 一角色一图下的序号：分镜格 <Picture 1>、纲吉 <Picture 2>、Reborn <Picture 3>
+single_ids = [e.id for e in pack_single.entries if e.kind == "character"]
+single_style = [e.id for e in pack_single.entries if e.kind == "style"][0]
+lay_single = RF.shot_ref_layout(pack_single, characters=single_ids,
+                                has_panel=True, style_ids=[single_style])
+ok(lay_single["picture_map"][single_ids[0]] == [2],
+   f"一角色一图：纲吉占 1 个槽 <Picture 2>（实得 {lay_single['picture_map'][single_ids[0]]}）")
+ok(lay_single["picture_map"][single_ids[1]] == [3],
+   f"一角色一图：Reborn 紧接其后 <Picture 3>（实得 {lay_single['picture_map'][single_ids[1]]}）")
+ok(len(lay_single["ref_image_keys"]) == 4,
+   f"一角色一图省下槽位：格+2角色+风格 = 4 槽（实得 {len(lay_single['ref_image_keys'])}）")
+
+# ---- 多图路径（关掉开关）继续用于验证「逐镜密集重排」----
+pack = RF.build_ref_pack(
+    character_names="纲吉, 纲吉, Reborn",
+    character_images=[fake_img(1), fake_img(2), fake_img(3)],
+    character_describes="棕发橙眼，黑色学生制服\n黑西装婴儿，卷鬓角",
+    style_name="基准风格",
+    style_images=fake_img(9),
+    one_image_per_character=False,
+)
+ok(len(pack.entries) == 3, f"参考包：2 角色 + 1 风格（实得 {len(pack.entries)}）")
+ok(len(pack.entries[0].images) == 2, "（多图路径）纲吉拿到 2 张定妆图")
+ok(pack.entries[0].id == "纲吉", f"中文 id 原样保留（实得 {pack.entries[0].id}）")
+ok(pack.entries[2].kind == "style", "风格条目排在最后")
 
 # 角色名 → id 用 unicode 转义，保证 @引用可用
 ids = [e.id for e in pack.entries]
@@ -764,6 +815,409 @@ ok(len(_s_auto) == 1 and _s_auto[0]["poly"] and len(_s_auto[0]["poly"]) >= 3,
 ok(_s_off[0]["poly"] is None, "★ 反向验证：panel_polygon=off 时退回纯矩形")
 ok(PS.split_page_boxes(_tri, mode="auto")[0][0] == tuple(_s_off[0]["box"]),
    "split_page_boxes（矩形 API）与 shapes 版的 box 一致")
+
+# --------------------------------------------------------------------------
+section("★ 画幅：严格对齐官方 adapt_canvas 规则")
+# --------------------------------------------------------------------------
+# 官方 comfy_extras/nodes_minimax_h3.py::adapt_canvas：
+#   短边 768 / 面积 ≤ 768×1344 / 逐轴 round 到 32
+ok(T.official_canvas(16, 9) == (1344, 768),
+   f"16:9 → 1344x768（实得 {T.official_canvas(16, 9)}）")
+ok(T.official_canvas(9, 16) == (768, 1344), "9:16 → 768x1344")
+ok(T.official_canvas(4, 3) == (1024, 768), "4:3 → 1024x768")
+ok(T.official_canvas(1, 1) == (768, 768), "1:1 → 768x768")
+for _rw, _rh in [(16, 9), (4, 3), (1, 1), (3, 4), (9, 16), (21, 9), (2.39, 1)]:
+    _w, _h = T.official_canvas(_rw, _rh)
+    ok(_w % 32 == 0 and _h % 32 == 0, f"official_canvas({_rw}:{_rh}) = {_w}x{_h} 是 32 倍数")
+    ok(_w * _h <= T.H3_MAX_PIXELS,
+       f"official_canvas({_rw}:{_rh}) 面积 {_w * _h} ≤ 官方上限 {T.H3_MAX_PIXELS}")
+ok(SP._parse_size("16:9") == (1344, 768), "文本里的 16:9 也走官方规则（不是 1376x768）")
+ok(T.resolve_canvas("preset", "16:9 横屏", None, 1.0)[:2] == (1344, 768), "preset ×1.0")
+ok(T.resolve_canvas("preset", "16:9 横屏", None, 0.5)[:2] == (672, 384), "preset ×0.5")
+ok(T.resolve_canvas("page", page_size=(1164, 1800), scale=1.0)[:2] == (768, 1184),
+   f"跟随原页比例 1164x1800 → 768x1184（实得 {T.resolve_canvas('page', page_size=(1164, 1800))[:2]}）")
+ok(T.resolve_canvas("text", text_size=(960, 544))[0] == 960, "text 模式用文本值")
+# ★ 关键：缩放必须在「官方规范之后」做，否则 official_canvas 会把短边拉回 768、缩放白做
+ok(T.resolve_canvas("preset", "16:9 横屏", None, 0.25)[:2] == (320, 192),
+   f"preset ×0.25 → 320x192（实得 {T.resolve_canvas('preset', '16:9 横屏', None, 0.25)[:2]}）")
+
+# --------------------------------------------------------------------------
+section("★ 从 board 自动出镜 + hybrid 合并")
+# --------------------------------------------------------------------------
+_bd = T.Board(panels=[T.Panel(index=i, box=[0, 0, 10, 10], page_index=0)
+                      for i in range(3)], pages=1, page_size=(1164, 1800))
+_so = T.resolve_canvas("preset", "16:9 横屏", None, 0.5)
+_pb = SP.from_board(_bd, default_duration=5.0, size_override=_so)
+ok(len(_pb.shots) == 3, f"一个分镜格 = 一个镜头（3 格 → 实得 {len(_pb.shots)} 镜）")
+ok(_pb.shots[0].panel_index == 0 and _pb.shots[2].panel_index == 2, "panel 索引按 board 顺序填好")
+ok(_pb.shots[0].requested_seconds == 5.0 and _pb.shots[0].length == 124,
+   "时长链：填 5s → 124 帧")
+ok(abs(_pb.shots[0].duration - 5.167) < 0.01,
+   f"实际时长 5.167s 可追溯（实得 {_pb.shots[0].duration}）")
+ok((_pb.shots[0].width, _pb.shots[0].height) == (672, 384), "画幅用画幅选择器的值")
+ok(any("自动生成" in w for w in _pb.warnings), "报告里说明「这是自动生成的初稿」")
+
+# 反向验证：没有 board 时必须明确报错，而不是静默给出 0 镜
+try:
+    SP.from_board(None)
+    ok(False, "★ 反向验证：缺 board 时应当报错")
+except ValueError as _e:
+    ok("board" in str(_e), f"★ 反向验证：缺 board 时明确报错（{str(_e)[:30]}…）")
+
+_txt = "=== s01 ===\npanel: 1\nduration: 4\ncontent: 饭桌上的对话\n"
+_tp = SP.parse_text(_txt, default_duration=None, size_override=_so, mark_missing_size=True)
+_mg = SP.merge_plan_with_text(_pb, _tp)
+ok(len(_mg.shots) == 3, f"hybrid 覆盖不改变镜数（实得 {len(_mg.shots)}）")
+ok(_mg.shots[1].length == 107 and _mg.shots[1].content == "饭桌上的对话",
+   f"panel 1 被文本覆盖：4s → 107 帧（实得 {_mg.shots[1].length}）")
+ok(_mg.shots[1].requested_seconds == 4.0, "原始秒数 4 被保留（不是被对齐后的 4.458）")
+ok(_mg.shots[0].length == 124 and _mg.shots[0].content == "",
+   "没被覆盖的镜沿用 board 自动稿")
+ok(any("hybrid 合并" in w for w in _mg.warnings), "报告写明覆盖/追加了几镜")
+
+# --------------------------------------------------------------------------
+section("★ 报告口径：『填 4 会变成 4.46』必须可见")
+# --------------------------------------------------------------------------
+_tbl = _mg.shot_table()
+ok("→ 107 帧 →" in _tbl, "镜头表显示「填的秒数 → 帧 → 实际秒数」三段链")
+ok("4.46s" in _tbl, f"表格里能看到 4 → 107 帧 → 4.46s（表：{_tbl[:80]}…）")
+ok("计划值" in _mg.summary(), "摘要明确标注是「计划值」，并提示 max_shots 的影响")
+
+# --------------------------------------------------------------------------
+section("★ 工作流模板的矩阵式布局（组间网格 + 组内网格）")
+# --------------------------------------------------------------------------
+# 契约（与 tools/make_example_workflow.py 的 INNER_COLS / OUTER_COLS 对应）：
+#   · 组间：group 的左上角落在二维网格上 —— 至少 2 行 2 列，且无两 group 占同一单元
+#   · 组内：每个 group 内节点按 INNER_COLS 列铺开（不是旧的单列堆叠），
+#           同一列的节点 x 相同 → 列对齐
+# 这些断言会在改了布局算法却改坏规整性时立刻变红。
+import itertools as _it  # noqa: E402
+import json as _json  # noqa: E402
+
+_INNER_COLS = 2
+_T_FILES = [
+    ("整集渲染版", "H3MangaStudio_example_workflow.json"),
+    ("官方接线版", "H3MangaStudio_official_nodes_workflow.json"),
+]
+
+for _label, _fn in _T_FILES:
+    _path = os.path.join(PKG_DIR, "templates", _fn)
+    if not os.path.isfile(_path):
+        ok(False, f"[{_label}] {_fn} 不存在（先跑 tools/make_example_workflow.py）")
+        continue
+    with open(_path, encoding="utf-8") as _f:
+        _wf = _json.load(_f)
+    _nodes, _groups = _wf["nodes"], _wf["groups"]
+
+    _ov = 0
+    for _a, _b in _it.combinations(_nodes, 2):
+        _ax, _ay = _a["pos"]
+        _bx, _by = _b["pos"]
+        if (min(_ax + _a["size"][0], _bx + _b["size"][0]) - max(_ax, _bx) > 0
+                and min(_ay + _a["size"][1], _by + _b["size"][1]) - max(_ay, _by) > 0):
+            _ov += 1
+    ok(_ov == 0, f"[{_label}] 节点两两不重叠（实得 {_ov} 对）")
+
+    _gov = 0
+    for _a, _b in _it.combinations(_groups, 2):
+        _ax, _ay, _aw, _ah = _a["bounding"]
+        _bx, _by, _bw, _bh = _b["bounding"]
+        if (min(_ax + _aw, _bx + _bw) - max(_ax, _bx) > 0
+                and min(_ay + _ah, _by + _bh) - max(_ay, _by) > 0):
+            _gov += 1
+    ok(_gov == 0, f"[{_label}] group 框两两不重叠（实得 {_gov} 对）")
+
+    _gx = sorted({g["bounding"][0] for g in _groups})
+    _gy = sorted({g["bounding"][1] for g in _groups})
+    ok(len(_gx) >= 2 and len(_gy) >= 2,
+       f"[{_label}] 组间是二维网格而非单行长条"
+       f"（实得 {len(_gx)} 列 × {len(_gy)} 行，共 {len(_groups)} 个 group）")
+    _cells = [(g["bounding"][0], g["bounding"][1]) for g in _groups]
+    ok(len(set(_cells)) == len(_cells),
+       f"[{_label}] 组间无两个 group 占同一网格单元"
+       f"（冲突 {len(_cells) - len(set(_cells))} 处）")
+
+    for _g in _groups:
+        _gx0, _gy0, _gw, _gh = _g["bounding"]
+        _mem = [n for n in _nodes
+                if _gx0 <= n["pos"][0] + n["size"][0] / 2 <= _gx0 + _gw
+                and _gy0 <= n["pos"][1] + n["size"][1] / 2 <= _gy0 + _gh]
+        _xs = sorted({n["pos"][0] for n in _mem})
+        _ys = sorted({n["pos"][1] for n in _mem})
+        _want_rows = (len(_mem) + _INNER_COLS - 1) // _INNER_COLS
+        if len(_mem) >= 2 and len(_xs) == 1:
+            ok(False, f"[{_label}]「{_g['title']}」组内是单列堆叠，未铺成矩阵")
+        elif len(_ys) > _want_rows:
+            ok(False, f"[{_label}]「{_g['title']}」组内行数 {len(_ys)} 超过"
+                      f"{_INNER_COLS} 列布局应有的 {_want_rows} 行")
+        else:
+            ok(True, f"[{_label}]「{_g['title']}」组内矩阵 {len(_xs)} 列 × {len(_ys)} 行"
+                     f"（{len(_mem)} 个节点）")
+
+    _owner = []
+    for _n in _nodes:
+        _cx = _n["pos"][0] + _n["size"][0] / 2
+        _cy = _n["pos"][1] + _n["size"][1] / 2
+        _owner.append(sum(
+            1 for g in _groups
+            if g["bounding"][0] <= _cx <= g["bounding"][0] + g["bounding"][2]
+            and g["bounding"][1] <= _cy <= g["bounding"][1] + g["bounding"][3]))
+    ok(_owner.count(0) == 0, f"[{_label}] 无孤儿节点（实得 {_owner.count(0)} 个）")
+    ok(max(_owner) <= 1, f"[{_label}] 无节点被多个 group 框住（实得 {_owner.count(2)} 个）")
+
+
+# --------------------------------------------------------------------------
+section("★ 一格多镜（shots: N）—— 「镜头数 ≠ 格数」的落地")
+# --------------------------------------------------------------------------
+_MULTI_TXT = """=== s01 ===
+panel: 0
+duration: 4
+action: 街景推近
+=== s02 ===
+panel: 1
+shots: 2
+duration: 5
+content: 短发女生笑脸 | 饭桌对话
+action: 少女特写 | 两人对坐
+dialogue: 好吃！ | 今天也谢谢你
+speaker: 纲吉
+=== s03 ===
+panel: 2
+duration: 3
+action: 收尾
+"""
+_m = SP.parse_text(_MULTI_TXT)
+ok(len(_m.shots) == 4, f"shots=2 的那格展开后总镜数 3→4（实得 {len(_m.shots)}）")
+ok([s.id for s in _m.shots] == ["s01", "s02", "s02_2", "s03"],
+   f"展开的镜 id 用 _2 后缀且顺序不变（实得 {[s.id for s in _m.shots]}）")
+_s02, _s02b = _m.shots[1], _m.shots[2]
+ok(_s02.panel_index == 1 and _s02b.panel_index == 1,
+   "展开出的两镜绑**同一个** panel（共用一张格图当锚点）")
+ok((_s02.sub_index, _s02.sub_total) == (0, 2)
+   and (_s02b.sub_index, _s02b.sub_total) == (1, 2),
+   f"sub_index/sub_total 正确（实得 {(_s02.sub_index, _s02.sub_total)} / "
+   f"{(_s02b.sub_index, _s02b.sub_total)}）")
+ok(_s02.content == "短发女生笑脸" and _s02b.content == "饭桌对话",
+   f"content 按 `|` 分段对应（实得 {_s02.content!r} / {_s02b.content!r}）")
+ok(_s02.action == "少女特写" and _s02b.action == "两人对坐",
+   "action 也按 `|` 分段")
+ok(_s02.dialogue == "好吃！" and _s02b.dialogue == "今天也谢谢你",
+   "dialogue 也按 `|` 分段")
+ok(_s02.requested_seconds == 5 and _s02b.requested_seconds == 5,
+   "★ duration 语义 = **每个镜头**各自 5s（该格合计 10s），不是整格平分")
+ok(_s02.speaker == "纲吉" and _s02b.speaker == "纲吉", "speaker 不切分，两镜都继承")
+ok([s.index for s in _m.shots] == [0, 1, 2, 3], "展开后 index 重新连续编号")
+ok(any("一格" in w or "shots=2" in w for w in _m.warnings),
+   "展开时给出可读 warning（让人知道镜头数为什么变多）")
+ok("panel x/N" in _m.shot_table() or "1/2" in _m.shot_table(),
+   "shot_table 标出「第几镜 / 共几镜」")
+
+# ★ 反向验证：不写 shots 时行为必须**完全不变**（id / index / sub_total）
+_back = SP.parse_text("=== a ===\npanel: 0\nduration: 5\naction: x\n")
+ok(len(_back.shots) == 1 and _back.shots[0].id == "a"
+   and _back.shots[0].sub_total == 1 and _back.shots[0].sub_index == 0
+   and _back.shots[0].index == 0,
+   "★ 反向验证：缺省（不写 shots）时 id/index/sub 与旧版逐字段一致")
+
+# 分段容错：不足 → 重复最后一段；超出 → 并回最后一段（不丢字）
+_short = SP.parse_text("=== b ===\npanel: 0\nshots: 3\nduration: 5\ncontent: 只有一段\n")
+ok([s.content for s in _short.shots] == ["只有一段"] * 3,
+   f"段数不足时重复最后一段（实得 {[s.content for s in _short.shots]}）")
+_long = SP.parse_text("=== c ===\npanel: 0\nshots: 2\nduration: 5\ncontent: 一 | 二 | 三\n")
+ok([s.content for s in _long.shots] == ["一", "二 | 三"],
+   f"段数超出时并回最后一段、不丢内容（实得 {[s.content for s in _long.shots]}）")
+
+# 非法值 / 上限
+_bad = SP.parse_text("=== d ===\npanel: 0\nshots: 0\nduration: 5\ncontent: x\n")
+ok(len(_bad.shots) == 1 and any("非法" in w for w in _bad.warnings),
+   "shots=0 按 1 镜处理并给 warning")
+_cap = SP.parse_text("=== e ===\npanel: 0\nshots: 99\nduration: 5\ncontent: x\n")
+ok(len(_cap.shots) == SP.MAX_SHOTS_PER_PANEL,
+   f"shots 超上限截断到 {SP.MAX_SHOTS_PER_PANEL}（实得 {len(_cap.shots)}）")
+ok(any("上限" in w for w in _cap.warnings), "截断时给出 warning")
+
+# hybrid：文本按 panel **整组**替换（否则一格多镜在 hybrid 下永远只剩 1 镜）
+_bd3 = T.Board(panels=[T.Panel(index=i, box=[0, 0, 100, 100], page_index=0)
+                       for i in range(3)], pages=1)
+_base3 = SP.from_board(_bd3, default_duration=5.0)
+ok(len(_base3.shots) == 3 and all(s.sub_total == 1 for s in _base3.shots),
+   "from_board 默认一格一镜（3 格 → 3 镜）")
+
+_txt_over = SP.parse_text("=== s02 ===\npanel: 1\nshots: 2\nduration: 4\n"
+                          "content: 左半格特写 | 右半格对话\n")
+_mg = SP.merge_plan_with_text(_base3, _txt_over)
+ok(len([s for s in _mg.shots if s.panel_index == 1]) == 2,
+   f"★ hybrid 下 shots=2 生效：panel 1 变 2 镜（实得 "
+   f"{len([s for s in _mg.shots if s.panel_index == 1])}）")
+ok(len(_mg.shots) == 4, f"合并后总镜数 3→4（实得 {len(_mg.shots)}）")
+ok([s.index for s in _mg.shots] == [0, 1, 2, 3], "合并后 index 连续")
+ok(len([s for s in _mg.shots if s.panel_index == 0]) == 1
+   and len([s for s in _mg.shots if s.panel_index == 2]) == 1,
+   "未覆盖的 panel 保持原样（各 1 镜）")
+
+_base6 = SP.from_board(_bd3, default_duration=5.0, shots_per_panel=2)
+ok(len(_base6.shots) == 6 and all(s.sub_total == 2 for s in _base6.shots),
+   f"from_board(shots_per_panel=2)：3 格 → 6 镜（实得 {len(_base6.shots)}）")
+_mg2 = SP.merge_plan_with_text(
+    _base6, SP.parse_text("=== q ===\npanel: 0\nduration: 9\ncontent: 改了第一格\n"))
+ok(len([s for s in _mg2.shots if s.panel_index == 1]) == 2,
+   "只有 panel 0 被文本覆盖，panel 1 仍保留自动稿的 2 镜")
+ok(len([s for s in _mg2.shots if s.panel_index == 0]) == 1,
+   "★ 文本显式声明了该格 → 以文本为准（panel 0 从 2 镜回到 1 镜）")
+
+# ==========================================================================
+section("★ VLM 层：三条硬约束 / 繁简与子串兜底 / 分段契约 / 结果转换")
+# ==========================================================================
+VLM = C.vlm
+
+# ---- 角色名归一化 ----
+ok(VLM.norm_name("綱吉") == "纲吉", f"繁→简：綱吉 → 纲吉（实得 {VLM.norm_name('綱吉')}）")
+ok(VLM.norm_name("獄寺") == "狱寺" and VLM.norm_name("藍波") == "蓝波",
+   "繁→简：獄寺 / 藍波")
+ok(VLM.norm_name("  纲吉  ") == "纲吉", "去空白")
+ok(VLM.parse_aliases("綱吉=纲吉, 藍波=蓝波,BAD") ==
+   {"綱吉": "纲吉", "藍波": "蓝波"}, "别名表解析（忽略无 = 的项）")
+ok(VLM.parse_names("纲吉, Reborn；京子\n纲吉") == ["纲吉", "Reborn", "京子"],
+   f"角色名列表去重保序（实得 {VLM.parse_names('纲吉, Reborn；京子\n纲吉')}）")
+
+_CHARS = {"纲吉", "狱寺", "蓝波", "Reborn"}
+
+# ---- 正常路径：繁简归一 + 闭集剔除 + camera 纠正 + shots 截断 ----
+_ob = {"page_kind": "narrative", "panels": [
+    {"panel": 0, "shots": 1, "characters": ["綱吉", "獄寺", "蓝波", "優尼", "查无此人"],
+     "camera": "static", "content": "街景", "confidence": 0.9},
+    {"panel": 1, "shots": 99, "camera": "zoom_x", "content": "特写"},
+]}
+_p, _e, _w = VLM.validate_page(_ob, [0, 1], _CHARS, "p")
+ok(_e == [], f"正常内容不报错（实得 {_e}）")
+ok(_p[0]["characters"] == ["纲吉", "狱寺", "蓝波"],
+   f"繁简归一 + 闭集剔除：{_p[0]['characters']}")
+ok(_p[1]["shots"] == VLM.MAX_SHOTS_PER_PANEL,
+   f"shots 超上限截断到 {VLM.MAX_SHOTS_PER_PANEL}（实得 {_p[1]['shots']}）")
+ok(_p[1]["camera"] == "static", "camera 越表 → static")
+ok(any("角色表外的名字" in x for x in _w), "闭集剔除留警告（不静默）")
+
+# ---- 子串兜底：模型写全名而闭集是简称 ----
+# ★ 实测一整卷里 7+ 处写成「泽田纲吉」→ 主角参考图被整批剔除且不报错。
+_p2, _e2, _w2 = VLM.validate_page(
+    {"panels": [{"panel": 0, "camera": "static", "content": "x",
+                 "characters": ["澤田綱吉"]}]},
+    [0], {"纲吉", "狱寺"}, "p")
+ok(_p2[0]["characters"] == ["纲吉"],
+   f"★ 子串兜底：澤田綱吉 → 纲吉（实得 {_p2[0]['characters']}）")
+ok(any("归一为" in x for x in _w2), "归一化留警告")
+
+# 反向验证：闭集里没有匹配项时必须剔除，绝不能瞎配
+_p3, _e3, _w3 = VLM.validate_page(
+    {"panels": [{"panel": 0, "camera": "static", "content": "x",
+                 "characters": ["完全无关的名字"]}]}, [0], {"纲吉"}, "p")
+ok(_p3[0]["characters"] == [], "★ 反向验证：闭集里无匹配 → 必须剔除（不瞎配）")
+
+# ---- 硬约束 1：禁 <Picture i> 标签 → 整页拒收 ----
+_p4, _e4, _ = VLM.validate_page(
+    {"panels": [{"panel": 0, "camera": "static", "content": "看 <Picture 1> 的人"}]},
+    [0], _CHARS, "p")
+ok(len(_e4) == 1 and "Picture" in _e4[0],
+   f"★ 出现 <Picture i> → 整页拒收（实得 {_e4}）")
+
+# ---- 硬约束 3：panel 越界 ----
+_p5, _e5, _ = VLM.validate_page(
+    {"panels": [{"panel": 42, "camera": "static", "content": "x"}]}, [0, 1], _CHARS, "p")
+ok(any("不在本页切出的格号里" in x for x in _e5),
+   f"panel 越界 → 拒收（实得 {_e5}）")
+# 越界那一格被剔除后，0/1 自然也没被解读 → 会连带报漏读。两条都对。
+ok(any("没有被解读" in x for x in _e5), "越界连带触发漏读（一致的行为）")
+
+# ---- 严格覆盖：漏读整格 ----
+_ob_miss = {"panels": [{"panel": 0, "camera": "static", "content": "z"}]}
+_, _e6, _ = VLM.validate_page(_ob_miss, [0, 1, 2], _CHARS, "p", strict_coverage=True)
+ok(len(_e6) == 1 and "没有被解读" in _e6[0], "★ 漏读整格 → 默认拒收")
+_, _e7, _w7 = VLM.validate_page(_ob_miss, [0, 1, 2], _CHARS, "p",
+                                strict_coverage=False)
+ok(_e7 == [] and any("没有被解读" in x for x in _w7), "放宽后只警告不拒收")
+
+# ---- ★ shots>1 的分段契约 ----
+_p8, _e8, _w8 = VLM.validate_page(
+    {"panels": [{"panel": 0, "shots": 2, "camera": "static",
+                 "content": "只有一段内容"}]}, [0], _CHARS, "p")
+ok(any("应 2 段" in x for x in _w8),
+   f"★ 反向验证：shots=2 但只有 1 段 → 必须警告（实得 {_w8}）")
+_p9, _e9, _w9 = VLM.validate_page(
+    {"panels": [{"panel": 0, "shots": 2, "camera": "static",
+                 "content": "左半是特写 | 右半是全景",
+                 "action": "推近 | 拉远"}]}, [0], _CHARS, "p")
+ok(not any("应 2 段" in x for x in _w9),
+   f"分段齐了就不警告（实得 {_w9}）")
+
+# ---- extract_json 容错 ----
+ok(VLM.extract_json('```json\n{"a": 1}\n```')["a"] == 1, "剥 ```json 包裹")
+ok(VLM.extract_json('废话 {"a": 2} 更多废话')["a"] == 2, "容忍前后废话")
+try:
+    VLM.extract_json("没有 JSON")
+    ok(False, "无 JSON 时应抛错")
+except VLM.VLMError:
+    ok(True, "无 JSON 时抛 VLMError")
+
+# ---- transform_pages ----
+_pages = [{"page_name": "p.png", "page_kind": "narrative", "panels": [
+    {"panel": 0, "shots": 3, "duration_hint": 10, "camera": "static",
+     "content": "a", "characters": []},
+    {"panel": 1, "shots": 1, "duration_hint": 6, "camera": "static",
+     "content": "b", "characters": []}]}]
+_t1 = VLM.transform_pages(_pages, force_shots=1, duration_scale=0.5)
+ok([x["shots"] for x in _t1[0]["panels"]] == [1, 1],
+   f"force_shots=1 全部压成 1 镜（实得 {[x['shots'] for x in _t1[0]['panels']]}）")
+ok([x["duration_hint"] for x in _t1[0]["panels"]] == [5, 3],
+   f"duration_scale=0.5：10→5、6→3（实得 "
+   f"{[x['duration_hint'] for x in _t1[0]['panels']]}）")
+_t2 = VLM.transform_pages(_pages)
+ok([x["shots"] for x in _t2[0]["panels"]] == [3, 1],
+   "不传参数时原样保留（默认不过度干预）")
+ok(_pages[0]["panels"][0]["shots"] == 3, "transform_pages 不修改入参（纯函数）")
+
+# ---- to_block_text ----
+_bt = VLM.to_block_text(
+    [{"page_name": "page001.png", "page_kind": "cover",
+      "panels": [{"panel": 0, "shots": 1, "camera": "static",
+                  "content": "封面", "duration_hint": 3}]}] + _pages,
+    episode="t")
+ok("=== page001" not in _bt,
+   "★ 非叙事页（cover）默认跳过 —— 不生成它的分段头（文件名只出现在「已跳过」说明里）")
+ok("=== p_00 ===" in _bt and "panel: 0" in _bt, "块文本分段头正确")
+ok("shots: 3" in _bt and "一格 3 镜" in _bt, "shots>1 写进文本并带抽查注释")
+ok("已跳过 1 个非叙事页" in _bt, "跳过说明写进文本尾部")
+_cover = {"page_name": "page001.png", "page_kind": "cover",
+          "panels": [{"panel": 0, "shots": 1, "camera": "static",
+                      "content": "封面", "duration_hint": 3}]}
+_bt2 = VLM.to_block_text([_cover] + _pages, episode="t",
+                         include_non_narrative=True)
+ok("=== page001_00 ===" in _bt2,
+   "★ 正向对照：include_non_narrative=True 时非叙事页也出镜头（开关真的有效）")
+
+# ---- count_pages / VLMResult ----
+_cp = VLM.count_pages(_pages, include_non_narrative=False)
+ok(_cp["panels"] == 2 and _cp["shots"] == 4,
+   f"count_pages：2 格 / 4 镜（实得 {_cp}）")
+_vr = T.VLMResult(pages=_pages, model="m", seconds=1.5)
+_st = _vr.stats()
+ok(_st["panels"] == 2 and _st["shots"] == 4 and _st["shots_over_one"] == 1,
+   f"VLMResult.stats（实得 {_st}）")
+ok("VLM 解读结果" in _vr.report(), "VLMResult.report 可读")
+
+# ---- tensor_to_b64：★ RGB 顺序（不转换就会红蓝颠倒送给模型）----
+import numpy as _np  # noqa: E402
+_red = _np.zeros((300, 600, 3), dtype=_np.float32)
+_red[:, :, 0] = 1.0                                # RGB 里的红
+_b64, _mime, _w, _h = VLM.tensor_to_b64(_red, max_edge=300)
+ok((_w, _h) == (300, 150), f"长边缩放到 300（实得 {_w}x{_h}）")
+ok(_mime == "image/jpeg", f"缩过就是 jpeg（实得 {_mime}）")
+import base64 as _b64mod  # noqa: E402
+import cv2 as _cv2  # noqa: E402
+_im = _cv2.imdecode(_np.frombuffer(_b64mod.b64decode(_b64), dtype=_np.uint8),
+                   _cv2.IMREAD_COLOR)              # cv2 解出来是 BGR
+_px = _im[_im.shape[0] // 2, _im.shape[1] // 2].tolist()
+ok(_px[2] > 200 and _px[0] < 60,
+   f"★ RGB 张量编码后解码仍是红（BGR={_px}，应为 [0,0,255]）—— 不转换就会红蓝颠倒")
 
 print(f"\n{'=' * 60}\n第 1 层纯逻辑：{PASS} 通过 / {FAIL} 失败\n{'=' * 60}")
 sys.exit(1 if FAIL else 0)

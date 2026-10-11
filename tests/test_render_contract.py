@@ -74,12 +74,16 @@ PANEL_IMGS = [11, 22, 33]     # 三个分镜格
 # --------------------------------------------------------------------------
 # 构造参考包 / 分镜格 / 计划
 # --------------------------------------------------------------------------
+# ★ 这一层**故意关掉「一角色一图」**（one_image_per_character=False），
+#   让纲吉吃掉 2 个图槽 —— 多槽位是暴露「逐镜重排 / 串号」最灵敏的构造：
+#   少放一张就会让后面所有角色整体错位。一角色一图下的序号契约在第 1 层覆盖。
 pack = rf.build_ref_pack(
     character_names="纲吉, 纲吉, Reborn",
     character_images=[make_img(v) for v in CHAR_A_IMGS + CHAR_B_IMGS],
     character_describes="棕发橙眼\n黑西装婴儿",
     style_name="基准风格",
     style_images=make_img(STYLE_IMG),
+    one_image_per_character=False,
 )
 char_ids = [e.id for e in pack.entries if e.kind == "character"]
 A, B = char_ids[0], char_ids[1]
@@ -747,6 +751,157 @@ render_mod.H3MangaShotConditioning.execute(
 )
 ok(not check_tensor_contract(CALLS["encode"]),
    "单镜条件节点的参考图同样是 4 维")
+
+# ==========================================================================
+section("★ VLM 层：⑬/⑭ 端到端契约（格号必须与 ① 的 board 全局号一致）")
+# ==========================================================================
+# 这一层抓的是**静默错**：① 的 Panel.index 是整批全局递增的，④ 用
+# panel_index 去索引 board.panels。若 ⑬ 只按「本页」编号（0..k-1），
+# 第 2 页起就会绑到错误的格图 —— 不报错，只是画面不对。
+# 所以这里直接**反查 VLM 收到的提示词**：第 2 页的格号必须是 3..8 而不是 0..5。
+import numpy as _np  # noqa: E402
+
+vlm_mod = importlib.import_module(pkg.__name__ + ".core.vlm")
+vlm_nodes = importlib.import_module(pkg.__name__ + ".nodes.vlm_nodes")
+types_mod = core.types
+
+PROMPTS = []
+BOX_IDS = []
+
+
+def _fake_call_vlm(opener, base_url, api_key, model, sys_prompt, user_text,
+                   b64, mime, timeout=180, retries=3, temperature=0.2,
+                   max_tokens=4096):
+    """桩：不联网，按提示词里给的格号造结果（故意倒序，验证代码会排序）。"""
+    import re as _re
+    PROMPTS.append(user_text)
+    ids = [int(m) for m in _re.findall(r"格 (\d+):", user_text)]
+    BOX_IDS.append(ids)
+    panels = []
+    for i in ids:
+        panels.append({
+            "panel": i,
+            # 只让 panel 0 判成 2 镜（便于精确核对总镜数：9 格 + 1 = 10 镜）
+            "shots": 2 if i == 0 else 1,
+            "camera": "static", "content": f"格{i}的画面内容",
+            "duration_hint": 8, "characters": [],
+        })
+    obj = {"page_kind": "narrative", "panels": list(reversed(panels)),
+           "summary": "summary"}
+    return json.dumps(obj, ensure_ascii=False), {"usage": {"total_tokens": 10}}
+
+
+_orig_call_vlm = vlm_mod.call_vlm
+vlm_mod.call_vlm = _fake_call_vlm
+
+# ---- 造 board：第 0 页 3 格、第 1 页 6 格（全局号 0..8）----
+_bd_panels, _gi = [], 0
+for _pi, _n in enumerate((3, 6)):
+    for _k in range(_n):
+        _bd_panels.append(types_mod.Panel(index=_gi, box=[0, 0, 10, 10],
+                                          page_index=_pi))
+        _gi += 1
+_vlm_board = types_mod.Board(panels=_bd_panels, pages=2, page_size=(100, 100))
+ALL_IDS = set(p.index for p in _vlm_board.panels)
+ok(ALL_IDS == set(range(9)), f"board 全局格号 0..8（实得 {sorted(ALL_IDS)}）")
+
+_img2 = _np.full((2, 100, 100, 3), 0.5, dtype=_np.float32)
+_vout = vlm_nodes.H3MangaVLMScribe.execute(
+    image=_img2, board=_vlm_board, characters="纲吉", char_alias="",
+    base_url="http://stub/v1", model="stub-model", api_key="k",
+    api_key_env="X", max_edge=0, temperature=0.2, timeout=10, max_pages=0,
+    strict_coverage=True, inspection_fallback=False, use_proxy=False)
+_vres, _vrep = _vout.result[0], _vout.result[1]
+
+ok(len(PROMPTS) == 2, f"两页各调一次 VLM（实得 {len(PROMPTS)}）")
+ok(BOX_IDS[0] == [0, 1, 2],
+   f"第 1 页提示词里的格号 = 0,1,2（实得 {BOX_IDS[0]}）")
+ok(BOX_IDS[1] == [3, 4, 5, 6, 7, 8],
+   f"★ 第 2 页提示词里是**全局号** 3..8（实得 {BOX_IDS[1]}）"
+   " —— 若为 0..5 说明没换算，会绑错格图")
+ok("共 6 格" in PROMPTS[1] or "共 3 格" in PROMPTS[0], "提示词里写了本页格数")
+ok("纲吉" in PROMPTS[0], "角色闭集写进了提示词")
+
+ok([p["panel"] for p in _vres.pages[0]["panels"]] == [0, 1, 2],
+   "第 1 页结果按 panel 排序（桩故意倒序）")
+ok([p["panel"] for p in _vres.pages[1]["panels"]] == [3, 4, 5, 6, 7, 8],
+   "★ 第 2 页结果的 panel 号 = 3..8（全局号）")
+_used = set(p["panel"] for pg in _vres.pages for p in pg["panels"])
+ok(_used <= ALL_IDS,
+   "★ 端到端契约：⑬ 产出的 panel 号全部落在 board.panels 的 index 集合内"
+   "（这是 ④ 能正确绑定的前提）")
+ok("格号来自 ① 的 board（全局号）" in _vrep, "报告写明格号来源")
+ok("narrative" in _vrep, "报告含页型分布")
+
+# ---- ⑭ → Plan 契约 ----
+_vout2 = vlm_nodes.H3MangaVLMPlan.execute(
+    vlm=_vres, include_non_narrative=False, force_shots=0, duration_scale=1.0,
+    default_duration=5.0, size_mode="preset", size_preset="16:9 横屏",
+    size_scale=0.5, episode="e", style="manga_anime")
+_plan = _vout2.result[0]
+_ptext, _prep = _vout2.result[1], _vout2.result[2]
+ok(len(_plan.shots) == 10,
+   f"⑭ → Plan：9 格 + 1 个多镜展开 = 10 镜（实得 {len(_plan.shots)}）")
+ok(all(s.length % 17 == 5 for s in _plan.shots),
+   "帧数满足 17n+5（官方硬约束）")
+ok(all(s.width % 32 == 0 and s.height % 32 == 0 for s in _plan.shots),
+   "画幅是 32 的倍数")
+ok((_plan.shots[0].width, _plan.shots[0].height) == (672, 384),
+   f"画幅 = 16:9 官方规范 × 0.5 = 672x384（实得 "
+   f"{_plan.shots[0].width}x{_plan.shots[0].height}）")
+ok(all(s.panel_index in ALL_IDS for s in _plan.shots),
+   "★ 每个 shot 的 panel_index 都能在 board 里找到（④ 绑定不会退化）")
+_double = [s for s in _plan.shots if s.panel_index == 0]
+ok(len(_double) == 2 and len(set(s.panel_index for s in _double)) == 1,
+   "★ 一格多镜：展开出的两镜共用同一 panel_index（绑同一张格图当锚点）")
+ok("=== page000_00 ===" in _ptext and "shots: 2" in _ptext,
+   "⑭ 的第 2 个输出是块文本，shots 已写入")
+
+# force_shots 覆盖
+_vout3 = vlm_nodes.H3MangaVLMPlan.execute(
+    vlm=_vres, include_non_narrative=False, force_shots=1, duration_scale=0.5,
+    default_duration=5.0, size_mode="preset", size_preset="16:9 横屏",
+    size_scale=0.5, episode="e", style="manga_anime")
+ok(len(_vout3.result[0].shots) == 9,
+   f"★ force_shots=1：从 10 镜回到 9 镜（实得 {len(_vout3.result[0].shots)}）")
+ok(all(s.sub_total == 1 for s in _vout3.result[0].shots),
+   "force_shots=1 后没有一格多镜")
+ok(abs(_vout3.result[0].shots[0].duration - 4.46) < 0.3,
+   f"★ duration_scale=0.5：8s → 对齐后 "
+   f"{_vout3.result[0].shots[0].duration:.2f}s（应约 4.46s）")
+
+# ---- 不接 board：自切格，编号从 0 连续 ----
+_page2x2 = _np.full((600, 400, 3), 1.0, dtype=_np.float32)
+_page2x2[20:270, 20:180] = 0.0
+_page2x2[20:270, 220:380] = 0.0
+_page2x2[330:580, 20:180] = 0.0
+_page2x2[330:580, 220:380] = 0.0
+BOX_IDS.clear()
+_vout4 = vlm_nodes.H3MangaVLMScribe.execute(
+    image=_page2x2[None, ...], board=None, characters="", char_alias="",
+    base_url="http://stub/v1", model="stub-model", api_key="k",
+    api_key_env="X", max_edge=0, temperature=0.2, timeout=10, max_pages=0,
+    strict_coverage=True, inspection_fallback=False, use_proxy=False)
+ok(BOX_IDS and BOX_IDS[0] == [0, 1, 2, 3],
+   f"不接 board → 自切格 4 格，编号 0..3（实得 {BOX_IDS[0] if BOX_IDS else None}）")
+ok("格号由本节点自切格算出（未接 board）" in _vout4.result[1],
+   "报告写明未接 board 时的格号来源")
+
+# ---- 缺 API key 必须报错（不能静默跑）----
+_err_key = None
+try:
+    vlm_nodes.H3MangaVLMScribe.execute(
+        image=_img2, board=_vlm_board, characters="", char_alias="",
+        base_url="http://stub/v1", model="m", api_key="",
+        api_key_env="__NO_SUCH_ENV_VAR__", max_edge=0, temperature=0.2,
+        timeout=10, max_pages=1, strict_coverage=True,
+        inspection_fallback=False, use_proxy=False)
+except Exception as e:      # noqa: BLE001
+    _err_key = e
+ok(_err_key is not None and "缺 API key" in str(_err_key),
+   "★ 反向验证：缺 API key 时报明确错误（不静默重试）")
+
+vlm_mod.call_vlm = _orig_call_vlm
 
 print(f"\n{'=' * 60}\n第 4 层契约测试：{PASS} 通过 / {FAIL} 失败\n{'=' * 60}")
 sys.exit(1 if FAIL else 0)

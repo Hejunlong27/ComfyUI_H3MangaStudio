@@ -56,7 +56,8 @@ export const NODE_LABELS = {
       "videos": "参考视频",
       "video_audios": "视频配套音轨",
       "max_ref_images": "参考图上限",
-      "name_source": "id 生成方式"
+      "name_source": "id 生成方式",
+      "one_image_per_character": "一角色一图（默认开）"
     },
     "outputs": {
       "0": {
@@ -72,7 +73,13 @@ export const NODE_LABELS = {
     "inputs": {
       "source": "来源",
       "file_path": "文件路径",
-      "inline_text": "内联文本"
+      "inline_text": "内联文本",
+      "board": "分镜格",
+      "default_duration": "默认时长(秒)",
+      "size_mode": "画幅模式",
+      "size_preset": "画幅比例(官方规范)",
+      "size_scale": "画幅缩放",
+      "auto_shots_per_panel": "每格自动出镜数"
     },
     "outputs": {
       "0": {
@@ -128,6 +135,140 @@ export const NODE_LABELS = {
       }
     }
   },
+  "H3MangaVLMScribe": {
+    "display_name": "⑬ VLM 漫画解读 ★",
+    "inputs": {
+      "image": "输入图像",
+      "board": "分镜格",
+      "characters": "角色闭集",
+      "char_alias": "角色别名表",
+      "base_url": "API 端点",
+      "model": "模型",
+      "api_key": "API Key(留空读环境变量)",
+      "api_key_env": "API Key 环境变量名",
+      "max_edge": "发送长边上限",
+      "temperature": "采样温度",
+      "timeout": "超时(秒)",
+      "max_pages": "只处理前 N 页",
+      "strict_coverage": "严格覆盖(漏读即拒收)",
+      "inspection_fallback": "内容审核回退",
+      "use_proxy": "走系统代理"
+    },
+    "outputs": {
+      "0": {
+        "name": "VLM 结果"
+      },
+      "1": {
+        "name": "报告"
+      }
+    }
+  },
+  "H3MangaVLMPlan": {
+    "display_name": "⑭ VLM 转分镜计划",
+    "inputs": {
+      "vlm": "VLM 结果",
+      "include_non_narrative": "保留封面/设定页",
+      "force_shots": "强制每格镜数",
+      "duration_scale": "时长缩放",
+      "default_duration": "默认时长(秒)",
+      "size_mode": "画幅模式",
+      "size_preset": "画幅比例(官方规范)",
+      "size_scale": "画幅缩放",
+      "episode": "剧集名",
+      "style": "全局风格"
+    },
+    "outputs": {
+      "0": {
+        "name": "分镜计划"
+      },
+      "1": {
+        "name": "分镜文本（可贴回 ③）"
+      },
+      "2": {
+        "name": "报告"
+      }
+    }
+  },
+  "H3MangaShotOut": {
+    "display_name": "⑫-A 镜头出栈（喂官方多参节点）",
+    "inputs": {
+      "plan": "分镜计划",
+      "refs": "参考包",
+      "board": "分镜格",
+      "shot_index": "取第几镜(从 1 起)",
+      "include_anchor": "把分镜格当锚点",
+      "ref_image_size": "参考图尺寸策略"
+    },
+    "outputs": {
+      "0": {
+        "name": "提示词"
+      },
+      "1": {
+        "name": "参考图 1 → 官方 ref_image_0"
+      },
+      "2": {
+        "name": "参考图 2 → 官方 ref_image_1"
+      },
+      "3": {
+        "name": "参考图 3 → 官方 ref_image_2"
+      },
+      "4": {
+        "name": "参考图 4 → 官方 ref_image_3"
+      },
+      "5": {
+        "name": "参考图 5 → 官方 ref_image_4"
+      },
+      "6": {
+        "name": "参考图 6 → 官方 ref_image_5"
+      },
+      "7": {
+        "name": "参考图 7 → 官方 ref_image_6"
+      },
+      "8": {
+        "name": "参考图 8 → 官方 ref_image_7"
+      },
+      "9": {
+        "name": "参考图 9 → 官方 ref_image_8"
+      },
+      "10": {
+        "name": "宽"
+      },
+      "11": {
+        "name": "高"
+      },
+      "12": {
+        "name": "帧数"
+      },
+      "13": {
+        "name": "槽位对照表"
+      }
+    }
+  },
+  "H3MangaShotCond": {
+    "display_name": "⑫-B 单镜条件（直出）",
+    "inputs": {
+      "plan": "分镜计划",
+      "refs": "参考包",
+      "board": "分镜格",
+      "clip": "文本编码器 CLIP",
+      "shot_index": "取第几镜(从 1 起)",
+      "include_anchor": "把分镜格当锚点",
+      "vae": "视频 VAE",
+      "audio_vae": "音频 VAE",
+      "ref_image_size": "参考图尺寸策略"
+    },
+    "outputs": {
+      "0": {
+        "name": "正向条件"
+      },
+      "1": {
+        "name": "潜空间"
+      },
+      "2": {
+        "name": "槽位对照表"
+      }
+    }
+  },
   "H3MangaShotConditioning": {
     "display_name": "H3 单镜条件（调试用）",
     "inputs": {
@@ -137,7 +278,7 @@ export const NODE_LABELS = {
       "plan": "分镜计划",
       "refs": "参考包",
       "board": "分镜格",
-      "shot_index": "镜头序号",
+      "shot_index": "取第几镜(从 1 起)",
       "ref_image_size": "参考图尺寸策略"
     },
     "outputs": {
